@@ -1,5 +1,5 @@
 
-# Software: Recommendation system for AI architectures suitable to scientific applications
+# Software: Characterization of AI Model Configurations for Model Reuse 
 
 ##  Statements of purpose and maturity
 The purpose of this work is to increase reusability of trained AI models via establishing 
@@ -15,7 +15,9 @@ optimization curves gathered during training. These metrics would be included wi
 trained AI models in AI Model Cards and would support better reuse of shared trained AI models. 
 
 In addition, these metrics can be used for ranking AI architectures in terms of their suitability
- to specific scientific applications. The metrics are focused on model (accuracy, stability), 
+ to specific scientific applications 
+ (i.e., a recommendation system for AI architectures suitable to scientific applications). 
+ The metrics are focused on model (accuracy, stability), 
  training process (speed, predictability, initialization gain), 
  training data (uniformity of training data, pretrained data compatibility with domain data, pretrained data compatibility with model architecture), and
  and hardware (GPU RAM memory usage, energy consumption). 
@@ -165,6 +167,7 @@ reuse
  
 #    Related Material
 -    URL for associated project on the NIST website: https://www.nist.gov/itl/ssd/information-systems-group
+-    URL for Model Cards toolkit: https://github.com/tensorflow/model-card-toolkit 
 
 [comment]: # ( References to user guides if stored outside of GitHub)
 
