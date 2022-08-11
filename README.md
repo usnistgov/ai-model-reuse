@@ -2,36 +2,25 @@
 # Software: Recommendation system for AI architectures suitable to scientific applications
 
 ##  Statements of purpose and maturity
-The goal of the project is to develop a tool for recommending AI architectures that are suitable for a specific scientific application
-based on training data. Furthermore, the software aims at generating optimization curves that are summarized by
-a set of metrics to be included with disseminated trained AI models. The dissemination is intended to be
-in entries of each AI model card and support better reuse of shared trained AI models 
+The purpose of this work is to increase reusability of trained AI models via establishing 
+and “standardizing” metrics that 
+- (a) would be useful to a third party reusing trained AI models and 
+- (b) would still protect trade secrets of the party providing trained AI models. 
 
-The motivation of this project is to derive AI-based modeling metrics from model loss data gathered
- during training. These metrics will be used for ranking AI architectures in terms of their suitability
+The optimization curves gathered during AI model training provide such a source of information 
+and the data points in optimization curves could meet both objectives (usefulness and protection).
+
+The motivation of this project is to implement baseline AI model metrics from train and test 
+optimization curves gathered during training. These metrics would be included with disseminated 
+trained AI models in AI Model Cards and would support better reuse of shared trained AI models. 
+
+In addition, these metrics can be used for ranking AI architectures in terms of their suitability
  to specific scientific applications. The metrics are focused on model (accuracy, stability), 
  training process (speed, predictability, initialization gain), 
  training data (uniformity of training data, pretrained data compatibility with domain data, pretrained data compatibility with model architecture), and
  and hardware (GPU RAM memory usage, energy consumption). 
- 
+  
 ##  Description of the repository contents
-- UNet: contains the UNet model training code
-
-    **UNet/train_lmdb_dataset.py** - This is the training file for UNet. It takes in an lmdb dataset containing
-    a train and test set, and runs training/validation on the dataset.
-    
-    **UNet/build_lmdb.py** - This is the file that builds the lmdb dataset required to train models. Check 
-    parameters for more detals.
-    
-    **UNet/unet_model.py** - This is the UNet model implementation.
-    
-    **UNet/unet_dataset.py** - This is the file that creates a pytorch dataset that eventually gets passed
-    into the dataloader. It contains the init, getitem, and len functions.
-       
-    **UNet/(isg_ai_pb2.py)(isg_ai_proto.txt)** - These files are for the google protobuf compiler, no need
-    to pay attention to these files.
-    
-    **UNet/augment.py** - This file is not used for training. It was pulled from Michael Majurski's original code.
 
 - pytorch_models: contains the training and inference code for multiple image segmentation AI architectures 
 supported by PyTorch library
@@ -49,6 +38,24 @@ supported by PyTorch library
     
     **pytorch_models/inference.py** - this file runs inference on a set of test images (or train images if desired). Given a model
 weights file, inference.py will run inference on all images in a folder, and save them in an output directory.
+
+- UNet: contains the UNet model training code
+
+    **UNet/train_lmdb_dataset.py** - This is the training file for UNet. It takes in an lmdb dataset containing
+    a train and test set, and runs training/validation on the dataset.
+    
+    **UNet/build_lmdb.py** - This is the file that builds the lmdb dataset required to train models. Check 
+    parameters for more detals.
+    
+    **UNet/unet_model.py** - This is the UNet model implementation.
+    
+    **UNet/unet_dataset.py** - This is the file that creates a pytorch dataset that eventually gets passed
+    into the dataloader. It contains the init, getitem, and len functions.
+       
+    **UNet/(isg_ai_pb2.py)(isg_ai_proto.txt)** - These files are for the google protobuf compiler, no need
+    to pay attention to these files.
+    
+    **UNet/augment.py** - This file is not used for training. It was pulled from Michael Majurski's original code.
 
 - preprocess: contains code for tiling and stitching images, evaluating signal-to-noise ratios of images, renaming files,
 manipulating mask labels, fusing labels with background, and inpainting regions
@@ -165,7 +172,7 @@ reuse
 - Peter Bajcsy, Michael Majurski, Thomas E. Cleveland IV, Manuel Carrasco, Walid Keyrouz, 
 “Characterization of AI Model Configurations for Model Reuse,” 
 Bio Image Computing workshop, European Conference on Computer Vision (ECCV), 2022, 
-24-28 October 2022 Tel-Aviv, Israel (under review).
+24-28 October 2022 Tel-Aviv, Israel.
 
 [comment]: # ( References to any included non-public domain software modules, and additional license language if needed, e.g. BSD, GPL, or MIT)
 
