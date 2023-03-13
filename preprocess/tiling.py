@@ -19,13 +19,16 @@ currently tile size is a floor of dimensions (height = imgheight // yPieces) whi
 
 """
 
-def count_digits(n):
-    count = 0
-    while (n > 0):
-        count = count + 1
-        n = n // 10
+
+def count_int_digits(n):
+    """
+    Given an integer, returns the number of digits in the number.
+    If a non integer is provided, it is automatically converted to an integer.
+    """
+    count = len(str(int(n)))
     print('The number of digits in the number:', n, ' are:', count)
     return count
+
 
 def imgcrop(input, xPieces, yPieces, img_name, output_dir):
     im = Image.open(input)
@@ -42,21 +45,23 @@ def imgcrop(input, xPieces, yPieces, img_name, output_dir):
         for j in range(0, xPieces):
             box = (j * width, i * height, (j + 1) * width, (i + 1) * height)
             # include all pixels in the image by modifying the size of the last tile
-            if i == yPieces-1:
-                box = (j * width, i * height, (j + 1) * width, imgheight)
-            if j == xPieces-1:
-                box = (j * width, i * height, imgwidth, (i + 1) * height)
-            if i == yPieces-1 and j == xPieces-1:
-                box = (j * width, i * height, imgwidth, imgheight)
+            # Final tiles removed as their larger sizes cant currently be handled.
+            # if i == yPieces-1:
+            #     box = (j * width, i * height, (j + 1) * width, imgheight)
+            # if j == xPieces-1:
+            #     box = (j * width, i * height, imgwidth, (i + 1) * height)
+            # if i == yPieces-1 and j == xPieces-1:
+            #     box = (j * width, i * height, imgwidth, imgheight)
 
             a = im.crop(box)
-            a.save(output_dir + "/" + img_name + "-" + str(i) + "-" + str(j) + file_extension)
+            a.save(output_dir + "/" + img_name + "_" + str(i) + "-" + str(j) + file_extension)
 
             # TODO this change works here but has to be propagated to the stitching.py code
             # col_id = str(j)
             # col_id.rjust(xnum_digits, '0')
             #
             # a.save(output_dir + "/" + img_name + "_r" + row_id + "_c" + col_id + file_extension)
+
 
 def tile(image_dir, output_dir, xPieces, yPieces):
     if not os.path.exists(output_dir):
@@ -70,8 +75,9 @@ def tile(image_dir, output_dir, xPieces, yPieces):
 
     i = 0
     for file in file_array:
-        imgcrop(file,xPieces,yPieces,filename_array[i], output_dir)
+        imgcrop(file, xPieces, yPieces, filename_array[i], output_dir)
         i += 1
+
 
 def main():
     parser = argparse.ArgumentParser(prog='split', description='Script that tiles data')
@@ -86,6 +92,7 @@ def main():
         return
 
     tile(args.image_dir, args.output_dir, args.xPieces, args.yPieces)
+
 
 if __name__ == "__main__":
     main()
