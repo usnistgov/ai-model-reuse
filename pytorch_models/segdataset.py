@@ -47,13 +47,18 @@ class SegmentationDataset(VisionDataset):
             weights = [0] * n_classes
             self.image_names = self.train_image_names
             self.mask_names = self.train_mask_names
-            for file in self.mask_names:
-                with open(file, "rb") as mask_file:
-                    image = np.asarray(Image.open(mask_file))
-                    for h in range(image.shape[0]):
-                        for w in range(image.shape[1]):
-                            value = image[h][w]
-                            weights[value] += 1
+            for mask_name in self.mask_names:
+                image = np.asarray(Image.open(mask_name))
+                for i in range(len(weights)):
+                    weights[i] += np.count_nonzero(image == i)
+            # OLD method:
+            # for file in self.mask_names:
+            #     with open(file, "rb") as mask_file:
+            #         image = np.asarray(Image.open(mask_file))
+            #         for h in range(image.shape[0]):
+            #             for w in range(image.shape[1]):
+            #                 value = image[h][w]
+            #                 weights[value] += 1
 
             self.weights = weights
 #
