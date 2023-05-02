@@ -19,26 +19,38 @@ from gpu_utilization import write_header
 from gpu_utilization import record
 
 from INFER_Dataset import GetDataloader
-from sklearn.metrics import f1_score, roc_auc_score
+
+from sklearn.metrics import f1_score, roc_auc_score, mean_squared_error, jaccard_score
 
 
-def initializeModel(outputchannels, pretrained, name, inputchannels=252):
+# from scipy.spatial.distance import dice
+
+
+def initializeModel(output_channels, pretrained, name, input_channels=252, bs=80, windowsize=200):
     model = None
-    combined_model = None
+    combine = True
+    if name == 'None':
+        model = None
+    if name == 'LSTM_Default':
+        model = LSTMModel(input_size=input_channels, hidden_size=128, num_layers=2, num_classes=output_channels)
+        combine = False
+    if name == 'Conv1d_Default':
+        model = INFERFeatureExtractor1D(input_channels=input_channels, standalone=True, output_channels=output_channels)
+        combine = False
     if name == 'Deeplab50' and pretrained is False:
-        model = models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=outputchannels, progress=True)
+        model = models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=output_channels, progress=True)
     if name == 'Deeplab50' and pretrained is True:
         model = models.segmentation.deeplabv3_resnet50(pretrained=True, progress=True)
-        model.classifier = DeepLabHead(2048, outputchannels)
+        model.classifier = DeepLabHead(2048, output_channels)
         model.train()
     if name == 'Deeplab101' and pretrained is False:
-        model = models.segmentation.deeplabv3_resnet101(pretrained=False, num_classes=outputchannels, progress=True)
+        model = models.segmentation.deeplabv3_resnet101(pretrained=False, num_classes=output_channels, progress=True)
     if name == 'Deeplab101' and pretrained is True:
         model = models.segmentation.deeplabv3_resnet101(pretrained=True, progress=True)
-        model.classifier = DeepLabHead(2048, outputchannels)
+        model.classifier = DeepLabHead(2048, output_channels)
         model.train()
     if name == 'MobileNetV3-Large' and pretrained is False:
-        model = models.segmentation.deeplabv3_mobilenet_v3_large(pretrained=False, num_classes=outputchannels,
+        model = models.segmentation.deeplabv3_mobilenet_v3_large(pretrained=False, num_classes=output_channels,
                                                                  progress=True)
     if name == 'MobileNetV3-Large' and pretrained is True:
         # https://gemfury.com/neilisaac/python:torchvision/-/content/models/quantization/mobilenetv3.py
@@ -48,40 +60,43 @@ def initializeModel(outputchannels, pretrained, name, inputchannels=252):
         inverted_residual_setting1, last_channel1 = _mobilenet_v3_conf(arch)
         print('inverted_residual_setting1:', inverted_residual_setting1)
         model.classifier = MobileNetV3(inverted_residual_setting=inverted_residual_setting1, last_channel=last_channel1,
-                                       num_classes=outputchannels)
+                                       num_classes=output_channels)
         model.train()
     if name == 'LR-ASPP-MobileNetV3-Large' and pretrained is False:
-        model = models.segmentation.lraspp_mobilenet_v3_large(pretrained=False, num_classes=outputchannels,
+        model = models.segmentation.lraspp_mobilenet_v3_large(pretrained=False, num_classes=output_channels,
                                                               progress=True)
     if name == 'LR-ASPP-MobileNetV3-Large' and pretrained is True:
         # https://github.com/pytorch/vision/blob/b94a4014a68d08f37697f4672729571a46f0042d/torchvision/models/segmentation/lraspp.py
         # Lite Reduced Atrous Spatial Pyramid Pooling (LR-ASPP)
         model = models.segmentation.lraspp_mobilenet_v3_large(pretrained=True, progress=True)
         print('INFO DOES NOT WORK: LR-ASPP-MobileNetV3-Large ', model.parameters)
-        model.classifier = LRASPPHead(low_channels=960, high_channels=3, num_classes=outputchannels, inter_channels=18)
+        model.classifier = LRASPPHead(low_channels=960, high_channels=3, num_classes=output_channels, inter_channels=18)
         model.train()
     if name == 'Resnet50' and pretrained is False:
-        model = models.segmentation.fcn_resnet50(pretrained=pretrained, num_classes=outputchannels, progress=True)
+        model = models.segmentation.fcn_resnet50(pretrained=pretrained, num_classes=output_channels, progress=True)
     if name == 'Resnet50' and pretrained is True:
         model = models.segmentation.fcn_resnet50(pretrained=pretrained, progress=True)
-        model.classifier = FCNHead(2048, outputchannels)
+        model.classifier = FCNHead(2048, output_channels)
     if name == 'Resnet101' and pretrained is False:
-        model = models.segmentation.fcn_resnet101(pretrained=pretrained, num_classes=outputchannels, progress=True)
+        model = models.segmentation.fcn_resnet101(pretrained=pretrained, num_classes=output_channels, progress=True)
     if name == 'Resnet101' and pretrained is True:
         model = models.segmentation.fcn_resnet101(pretrained=pretrained, progress=True)
-        model.classifier = FCNHead(2048, outputchannels)
+        model.classifier = FCNHead(2048, output_channels)
 
-    if model is None:
-        print('ERROR: did not find a match to the model name: ', name)
+    if name is None:
+        print(f'Did not find a match to the model name: {name}, using Basic Feature Extractor')
+    if combine:
+        selected_model = CombinedModel(input_shape=input_channels, segmentation_model=model, n_classes=output_channels,
+                                       window_size=windowsize, batchsize=bs)
     else:
-        combined_model = CombinedModel(input_shape=inputchannels, segmentation_model=model, n_classes=outputchannels)
-        # if channels:
-        #     model.backbone.conv1 = torch.nn.Conv2d(int(channels), 64, 7, 2, 3, bias=False)
-        #     model_input = torch.nn()
-        # print(model)
-        if not pretrained:
-            combined_model.train()
-    return combined_model  # Will be none if model is not initialized
+        selected_model = model
+    # if channels:
+    #     model.backbone.conv1 = torch.nn.Conv2d(int(channels), 64, 7, 2, 3, bias=False)
+    #     model_input = torch.nn()
+    # print(model)
+    if not pretrained:
+        selected_model.train()
+    return selected_model  # Will be none if model is not initialized
 
 
 def confusion_matrix(predictions, masks, classes):
@@ -100,19 +115,64 @@ def confusion_matrix(predictions, masks, classes):
 def get_accuracy_batch(predictions, masks):
     total_acc = 0
     length = predictions.shape[0]
-    background = 0
     for i in range(predictions.shape[0]):
         pred = torch.argmax(predictions[i], 0)
         pred = pred.cpu().detach().numpy().astype(np.uint8)
         mask = torch.squeeze(masks[i], 0)
         mask = mask.cpu().detach().numpy().astype(np.uint8)
         matched = np.sum(pred == mask)
-        total_acc += (matched / (pred.shape[0] * pred.shape[1]))
+        total_acc += (matched / pred.size)
     avg_acc = total_acc / length
     return avg_acc
 
 
-def train_model(model, criterion, criterion_test, dataloaders, optimizer, metrics, bpath,
+def get_dice_batch(predictions, masks):
+    total_dice = 0
+    length = predictions.shape[0]
+    for i in range(predictions.shape[0]):
+        pred = torch.argmax(predictions[i], 0)
+        pred = pred.cpu().detach().numpy().astype(np.uint8)
+        mask = torch.squeeze(masks[i], 0)
+        mask = mask.cpu().detach().numpy().astype(np.uint8)
+        # print("maskshape", mask.shape,"predshape", pred.shape)
+        jaccard_coeff = jaccard_score(mask.flatten(),pred.flatten(), average='micro')
+        #  https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
+        dice_coeffs = (2 * jaccard_coeff) / (jaccard_coeff + 1)
+        # print("DICE", dice_coeffs, pred.shape, mask.shape)
+        total_dice += dice_coeffs
+    avg_dice = total_dice / length
+    return avg_dice
+def get_jaccard_batch(predictions, masks):
+    total_jaccard = 0
+    length = predictions.shape[0]
+    for i in range(predictions.shape[0]):
+        pred = torch.argmax(predictions[i], 0)
+        pred = pred.cpu().detach().numpy().astype(np.uint8)
+        mask = torch.squeeze(masks[i], 0)
+        mask = mask.cpu().detach().numpy().astype(np.uint8)
+        # print("maskshape", mask.shape,"predshape", pred.shape)
+        jaccard_coeff = jaccard_score(mask.flatten(),pred.flatten(), average='micro')
+        #  https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
+        total_jaccard += jaccard_coeff
+    avg_jaccard = total_jaccard / length
+    return avg_jaccard
+
+
+def get_mse_batch(predictions, masks):
+    total_mse = 0
+    length = predictions.shape[0]
+    for i in range(predictions.shape[0]):
+        pred = torch.argmax(predictions[i], 0)
+        pred = pred.cpu().detach().numpy().astype(np.uint8)
+        mask = torch.squeeze(masks[i], 0)
+        mask = mask.cpu().detach().numpy().astype(np.uint8)
+        mse_coeffs = mean_squared_error(mask.flatten(), pred.flatten())
+        total_mse += mse_coeffs
+    avg_mse = total_mse / length
+    return avg_mse
+
+
+def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen_metrics, bpath,
                 num_epochs, device_name, metrics_name, mfn, model_name, pretrained, lr, bs, classes):
     since = time.time()
     # best_model_wts = copy.deepcopy(model.state_dict())
@@ -120,9 +180,9 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     model.to(device)
-
+    # TODO: add chosen_metrics keys to fieldnames
     fieldnames = ['Model', 'Pretrained', 'LR', 'Batch_Size', 'epoch', 'Seconds', 'Train_loss', 'Test_loss',
-                  'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score']
+                  'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score', 'Dice','Jaccard', 'MSE']
     print('INFO: pytorch model output stats:', os.path.join(bpath, metrics_name))
 
     with open(os.path.join(bpath, metrics_name), 'w', newline='') as csvfile:
@@ -184,8 +244,8 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
                 #     inputs = inputs[:, :, 0, :, :]
                 # print("INPUTS DIMENSIONS ", inputs.shape, flush=True)
                 outputs = model(inputs)
-                # print("OUTPUT DIMENSIONS ", outputs.shape, flush=True)
-                # print("OUTPUTS DIMENSIONS: ", outputs.shape)
+                # print("MASKS: ", masks.shape, masks.dtype, flush=True)
+                # print("OUTPUT :", type(outputs), outputs.shape,outputs.dtype, flush=True)
                 if device_name == 'cpu':
                     loss = criterion(outputs, masks.type(torch.LongTensor))
                 else:
@@ -205,6 +265,9 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
         running_loss = 0
         matrices = []
         running_acc = 0
+        running_dice = 0
+        running_jaccard = 0
+        running_mse = 0
         for sample in tqdm(iter(dataloaders['Test'])):
             inputs = sample['image'].to(device)
             masks = sample['mask'].to(device)
@@ -225,15 +288,25 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
                 # print("INPUTS DIMENSIONS ", inputs.shape, flush=True)
                 # print("OUTPUT DIMENSIONS ", outputs.shape, flush=True)
                 running_acc += get_accuracy_batch(outputs, masks)
+                running_dice += get_dice_batch(outputs, masks)
+                running_jaccard += get_jaccard_batch(outputs, masks)
+                running_mse += get_mse_batch(outputs, masks)
                 matrices.append(confusion_matrix(outputs, masks, classes))
+                # print("MASKS: ", masks.shape, flush=True)
                 masks = masks.squeeze(1)
+                # print("MASKS: ", masks.shape, flush=True)
                 if device_name == 'cpu':
                     test_loss = criterion_test(outputs, masks.type(torch.LongTensor))
                 else:
                     test_loss = criterion_test(outputs, masks.type(torch.cuda.LongTensor))
                 running_loss += test_loss.item()
+                if test_loss < best_loss:
+                    best_loss = test_loss
         epoch_loss = running_loss / len(dataloaders['Test'])
         epoch_accuracy = running_acc / len(dataloaders['Test'])
+        epoch_dice = running_dice / len(dataloaders['Test'])
+        epoch_jaccard = running_jaccard / len(dataloaders['Test'])
+        epoch_mse = running_mse / len(dataloaders['Test'])
         cf = np.sum(matrices, 0)
         running_precision = 0
         sums = np.sum(cf, axis=1).tolist()
@@ -265,6 +338,9 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
         batchsummary['Precision'] = avg_precision
         batchsummary['Recall'] = avg_recall
         batchsummary['F1-Score'] = f1
+        batchsummary['Dice'] = epoch_dice
+        batchsummary['Jaccard'] = epoch_jaccard
+        batchsummary['MSE'] = epoch_mse
         seconds = time.time() - start_time
         seconds = int(seconds)
         batchsummary['Seconds'] = seconds
@@ -385,9 +461,11 @@ def main():
     toBool = True
     if args.pretrained == 'False':
         toBool = False
-    # TODO: Add functionality to detect when there are multiple channels or when
-    model = initializeModel(outputchannels=args.classes, pretrained=toBool, name=args.model_name,
-                            inputchannels=252)  # Calls function to create the deeplabv3 model from torchvision.
+    # TODO: Add functionality for dynamically choosing windowsize
+    # TODO: also dynamically choose input_channels
+    # Calls function to create the deeplabv3 model from torchvision.
+    model = initializeModel(output_channels=args.classes, pretrained=toBool, name=args.model_name,
+                            input_channels=168, bs=args.batch_size)
     if args.device_name == 'cpu':
         output_dir = args.output_dir
     else:
@@ -414,11 +492,11 @@ def main():
     criterion = torch.nn.CrossEntropyLoss(weight=my_weights)  # criterion for training (weigthed classes)
     criterion_test = torch.nn.CrossEntropyLoss()  # criterion for validation (no weighted classes)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    metrics = {'f1_score': f1_score, 'auroc': roc_auc_score}
+    metrics = {'f1_score': f1_score, 'auroc': roc_auc_score, 'Dice': jaccard_score, 'MSE': mean_squared_error}
 
     print('Starting training now')
     print("Seg_dataloader: ", seg_dataloader)
-    train_model(model, criterion, criterion_test, seg_dataloader, optimizer, bpath=output_dir, metrics=metrics,
+    train_model(model, criterion, criterion_test, seg_dataloader, optimizer, bpath=output_dir, chosen_metrics=metrics,
                 num_epochs=args.epochs, device_name=args.device_name, metrics_name=args.metrics_name,
                 mfn=args.model_filename, model_name=args.model_name, pretrained=args.pretrained, lr=args.learning_rate,
                 bs=args.batch_size, classes=args.classes)
