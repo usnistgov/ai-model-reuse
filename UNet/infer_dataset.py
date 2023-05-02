@@ -50,64 +50,6 @@ this method runs inference and reports confusion matrix base don the provided ma
 
 '''
 
-
-# def inference(model_filepath, image_filepath, mask_filepath, epoch):
-#     model = torch.load(model_filepath)
-#     model.eval()
-#
-#     file_array = []
-#     mask_array = []
-#     for filename in os.listdir(image_filepath):
-#         filepath = os.path.join(image_filepath, filename)
-#         file_array.append(filepath)
-#
-#     for filename in os.listdir(mask_filepath):
-#         filepath = os.path.join(mask_filepath, filename)
-#         mask_array.append(filepath)
-#     i = 0
-#     running_acc = []
-#     matrices = []
-#     for i in range(len(file_array)):
-#         img = skimage.io.imread(file_array[i])
-#         msk = skimage.io.imread(mask_array[i])
-#         img = build_lmdb.enforce_size_multiple(img)
-#         msk = build_lmdb.enforce_size_multiple(msk)
-#         img = unet_dataset.UnetDataset.zscore_normalize(img)
-#         img = img.reshape(img.shape[0], img.shape[1], 1)
-#         img = unet_dataset.UnetDataset.format_image(img)
-#         img = np.concatenate((img, img, img), axis=0)
-#         img = torch.from_numpy(img)
-#         img = torch.unsqueeze(img, 0)
-#         # print(img.shape)
-#         pred = model.forward(img)
-#         # print(pred.shape)
-#         pred = torch.squeeze(pred, 0)
-#         pred = torch.argmax(pred, 0)
-#         # print(pred.shape)
-#         print('-----------------------------------')
-#         name_start = file_array[i].find('S')
-#         name = file_array[i][name_start:100]
-#         pred = pred.cpu().detach().numpy().astype(np.uint8)
-#         # print(pred.shape)
-#         # print("Pred: {}".format(pred))
-#         # print(msk.shape)
-#         # print("Mask: {}".format(msk))
-#         matched = np.sum(pred == msk)
-#         accuracy = matched / (pred.shape[0] * pred.shape[1])
-#         running_acc.append(accuracy)
-#         m = confusion_matrix(pred, msk)
-#         matrices.append(m)
-#         i += 1
-#         # skimage.io.imsave('/home/dyg/ai-model-recommender/UNet/predictions/{}_prediction.png'.format(name), pred)
-#         skimage.io.imsave('/home/dyg/trainingOutput/unetOutput/{}/pred_{}'.format(epoch, name), pred)
-#     avg_acc = sum(running_acc) / len(running_acc)
-#     print("Average Accuracy: {}".format(avg_acc))
-#     print("Average MER: {}".format(1 - avg_acc))
-#     conf = np.sum(matrices, 0)
-#     print(conf)
-#     pd.DataFrame(conf).to_csv("confusion_matrix_unet.csv")
-#
-
 ''' 
 run inference with model_filemath on images in image_filepath and 
 save results in output_dir
@@ -139,7 +81,6 @@ def inference(model_filepath, image_filepath, output_dir):
         img = unet_dataset.UnetDataset.format_image(img) # re-order channels to meet the pytorch CHW order
         img = np.concatenate((img, img, img), axis=0)
 
-        # # TODO - torch cannot support uint16???  added by PB
         # TypeError: can't convert np.ndarray of type numpy.uint16. The only supported types are: float64, float32, float16, complex64, complex128, int64, int32, int16, int8, uint8, and bool.
         img = img.astype(np.float32)
 

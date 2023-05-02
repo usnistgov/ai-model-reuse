@@ -49,6 +49,8 @@ class INFERSegmentationDataset(VisionDataset):
     """A PyTorch dataset for image segmentation task. The dataset is compatible with torchvision transforms.
     The transforms passed would be applied to both the Images and Masks.
     """
+    use_normalization = None
+    # use_normalization = "zscore_normalize"
 
     def __init__(self,
                  root: str,
@@ -67,7 +69,6 @@ class INFERSegmentationDataset(VisionDataset):
         train_mask_folder_path = Path(self.root) / train_mask_folder
         test_image_folder_path = Path(self.root) / test_image_folder
         test_mask_folder_path = Path(self.root) / test_mask_folder
-
         self.fraction = fraction
         self.train_image_names = sorted(train_image_folder_path.glob("*"))
         self.train_mask_names = sorted(train_mask_folder_path.glob("*"))
@@ -109,6 +110,9 @@ class INFERSegmentationDataset(VisionDataset):
 
     @staticmethod
     def zscore_normalize(x):
+        """
+
+        """
         x = x.astype(np.float32)
 
         std = np.std(x)
@@ -135,7 +139,11 @@ class INFERSegmentationDataset(VisionDataset):
 
         # format the image into a tensor
         # image= self.format_image(image) # no need to re-order channels!!
-        image = self.zscore_normalize(image)
+        if self.use_normalization == "zscore_normalize":
+            image = self.zscore_normalize(image)
+        else:
+            pass
+            # print("ignoring normalization")
         sample['image'] = torch.from_numpy(image)
 
         # if(image.dtype != "uint8"):
