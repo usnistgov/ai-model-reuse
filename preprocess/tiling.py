@@ -70,8 +70,9 @@ def tile(image_dir, output_dir, xPieces, yPieces):
     filename_array = []
     for filename in os.listdir(image_dir):
         filepath = os.path.join(image_dir, filename)
-        file_array.append(filepath)
-        filename_array.append(filename)
+        if filename.split('.')[-1] in ["tif", "tiff"]:
+            file_array.append(filepath)
+            filename_array.append(filename)
 
     i = 0
     for file in file_array:

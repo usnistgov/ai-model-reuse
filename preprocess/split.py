@@ -26,6 +26,7 @@ def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test
     idx = int(fraction * len(img_files))
     train_img_files = img_files[0:idx]
     test_img_files = img_files[idx:]
+    # print(train_img_files, test_img_files)
     for fn in train_img_files:
         file = os.path.join(image_folder, fn)
         mask_file = os.path.join(mask_folder, fn)

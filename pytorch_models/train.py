@@ -1,6 +1,6 @@
 # IEEE Format Citation:
 # M. S. Minhas, “Transfer Learning for Semantic Segmentation using PyTorch DeepLab v3,” GitHub.com/msminhas93, 12-Sep-2019. [Online]. Available: https://github.com/msminhas93/DeepLabv3FineTuning.
-#Link: https://towardsdatascience.com/transfer-learning-for-segmentation-using-deeplabv3-in-pytorch-f770863d6a42
+# Link: https://towardsdatascience.com/transfer-learning-for-segmentation-using-deeplabv3-in-pytorch-f770863d6a42
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from torchvision.models.segmentation.fcn import FCNHead
 from torchvision.models.segmentation.lraspp import LRASPPHead, LRASPP
@@ -27,6 +27,8 @@ from datahandler import GetDataloader
 from sklearn.metrics import f1_score, roc_auc_score
 from torchvision.utils import save_image
 from segdataset import SegmentationDataset
+
+
 def initializeModel(outputchannels, pretrained, name):
     if name == 'Deeplab50' and pretrained is False:
         model = models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=outputchannels, progress=True)
@@ -47,21 +49,24 @@ def initializeModel(outputchannels, pretrained, name):
         model.train()
         return model
     if name == 'MobileNetV3-Large' and pretrained is False:
-        model = models.segmentation.deeplabv3_mobilenet_v3_large(pretrained=False, num_classes=outputchannels, progress=True)
+        model = models.segmentation.deeplabv3_mobilenet_v3_large(pretrained=False, num_classes=outputchannels,
+                                                                 progress=True)
         model.train()
         return model
     if name == 'MobileNetV3-Large' and pretrained is True:
-        #https://gemfury.com/neilisaac/python:torchvision/-/content/models/quantization/mobilenetv3.py
+        # https://gemfury.com/neilisaac/python:torchvision/-/content/models/quantization/mobilenetv3.py
         model = models.segmentation.deeplabv3_mobilenet_v3_large(pretrained=True, progress=True)
         print('INFO DOES NOT WORK: MobileNetV3-Large', model.parameters)
         arch = "mobilenet_v3_large"
         inverted_residual_setting1, last_channel1 = _mobilenet_v3_conf(arch)
         print('inverted_residual_setting1:', inverted_residual_setting1)
-        model.classifier = MobileNetV3(inverted_residual_setting=inverted_residual_setting1, last_channel=last_channel1, num_classes=outputchannels)
+        model.classifier = MobileNetV3(inverted_residual_setting=inverted_residual_setting1, last_channel=last_channel1,
+                                       num_classes=outputchannels)
         model.train()
         return model
     if name == 'LR-ASPP-MobileNetV3-Large' and pretrained is False:
-        model = models.segmentation.lraspp_mobilenet_v3_large(pretrained=False, num_classes=outputchannels, progress=True)
+        model = models.segmentation.lraspp_mobilenet_v3_large(pretrained=False, num_classes=outputchannels,
+                                                              progress=True)
         model.train()
         return model
     if name == 'LR-ASPP-MobileNetV3-Large' and pretrained is True:
@@ -116,7 +121,7 @@ def get_accuracy_batch(predictions, masks):
         mask = torch.squeeze(masks[i], 0)
         mask = mask.cpu().detach().numpy().astype(np.uint8)
         matched = np.sum(pred == mask)
-        total_acc += (matched /(pred.shape[0] * pred.shape[1]))
+        total_acc += (matched / (pred.shape[0] * pred.shape[1]))
     avg_acc = total_acc / length
     return avg_acc
 
@@ -130,7 +135,8 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
     print(device)
     model.to(device)
 
-    fieldnames = ['Model', 'Pretrained', 'LR', 'Batch_Size','epoch', 'Seconds', 'Train_loss', 'Test_loss', 'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score']
+    fieldnames = ['Model', 'Pretrained', 'LR', 'Batch_Size', 'epoch', 'Seconds', 'Train_loss', 'Test_loss',
+                  'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score']
     print('INFO: pytorch model output stats:', os.path.join(bpath, metrics_name))
 
     with open(os.path.join(bpath, metrics_name), 'w', newline='') as csvfile:
@@ -147,7 +153,7 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
 
     gpu_metric_filename = os.path.join(gpu_metric_folder, gpu_metric_filename)
     print('INFO: pytorch output gpu utilization file: ', gpu_metric_filename)
-    #gpu_utilization.write_header(gpu_metric_filename)
+    # gpu_utilization.write_header(gpu_metric_filename)
     write_header(gpu_metric_filename)
 
     start_time = time.time()
@@ -182,7 +188,7 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
                     inputs = inputs.type(torch.cuda.FloatTensor)
                     masks = masks.type(torch.cuda.FloatTensor)
                     # add dimension for channels = 1
-                    #masks = masks.unsqueeze(1)
+                    # masks = masks.unsqueeze(1)
 
                 # print('\nINPUTS:', inputs.shape)
                 # print('\nMASKS:', masks.shape)
@@ -228,21 +234,23 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
                 else:
                     test_loss = criterion_test(outputs['out'], masks.type(torch.cuda.LongTensor))
                 running_loss += test_loss.item()
+                if test_loss < best_loss:
+                    best_loss = test_loss
         epoch_loss = running_loss / len(dataloaders['Test'])
         epoch_accuracy = running_acc / len(dataloaders['Test'])
         cf = np.sum(matrices, 0)
         running_precision = 0
         sums = np.sum(cf, axis=1).tolist()
         avgsubtract = 0
-        for i in range(0,classes):
+        for i in range(0, classes):
             toadd = 0
             if sums[i] == 0:
                 toadd = 0
-                avgsubtract+=1
+                avgsubtract += 1
             else:
                 toadd = cf[i][i] / sums[i]
             running_precision += toadd
-        avg_precision = running_precision / (classes-avgsubtract)
+        avg_precision = running_precision / (classes - avgsubtract)
         col_sums = np.sum(cf, axis=0).tolist()
         running_recall = 0
         avgsubtract = 0
@@ -250,11 +258,11 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
             toadd = 0
             if col_sums[i] == 0:
                 toadd = 0
-                avgsubtract+=1
+                avgsubtract += 1
             else:
                 toadd = cf[i][i] / col_sums[i]
             running_recall += toadd
-        avg_recall = running_recall / (classes-avgsubtract)
+        avg_recall = running_recall / (classes - avgsubtract)
         f1 = ((avg_precision * avg_recall) / (avg_precision + avg_recall)) * 2
         batchsummary['Per-Pixel Accuracy'] = epoch_accuracy
         batchsummary['Test_loss'] = epoch_loss
@@ -276,7 +284,6 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
     print('Training complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
     print('Lowest Loss: {:4f}'.format(best_loss))
-
 
 
 def main():
@@ -360,35 +367,34 @@ def main():
             
             """
 
-
     if args.device_name == 'cpu':
         data = args.data
     else:
         data = args.data
 
-    dataloader_class = GetDataloader(data_dir=data,  #create class that contains the dataloaders and class weights
-                             train_image_folder=args.train_images,
-                             train_mask_folder=args.train_masks,
-                             test_image_folder=args.test_images,
-                             test_mask_folder=args.test_masks,
-                             batch_size=args.batch_size,
-                             fraction=0.2,
-                             n_classes=args.classes)
+    dataloader_class = GetDataloader(data_dir=data,  # create class that contains the dataloaders and class weights
+                                     train_image_folder=args.train_images,
+                                     train_mask_folder=args.train_masks,
+                                     test_image_folder=args.test_images,
+                                     test_mask_folder=args.test_masks,
+                                     batch_size=args.batch_size,
+                                     fraction=0.2,
+                                     n_classes=args.classes)
 
-    seg_dataloader = dataloader_class.dataloaders  #grab dataloader from the class
+    seg_dataloader = dataloader_class.dataloaders  # grab dataloader from the class
     if (len(seg_dataloader['Train']) < 1 or len(seg_dataloader['Test']) < 1):
-        print('ERROR: could not find train or test data len(train):', (seg_dataloader['Train']) )
+        print('ERROR: could not find train or test data len(train):', (seg_dataloader['Train']))
         print('len(test):', len(seg_dataloader['Test']))
 
     toBool = True
     if args.pretrained == 'False':
         toBool = False
-    model = initializeModel(outputchannels=args.classes, pretrained=toBool, name=args.model_name)  #Calls function to create the deeplabv3 model from torchvision.
+    model = initializeModel(outputchannels=args.classes, pretrained=toBool,
+                            name=args.model_name)  # Calls function to create the deeplabv3 model from torchvision.
     if args.device_name == 'cpu':
         output_dir = args.output_dir
     else:
         output_dir = args.output_dir
-
 
     if not Path(output_dir).exists():
         Path(output_dir).mkdir()
@@ -401,22 +407,24 @@ def main():
 
     fractions = []
     for number in my_weights:
-        fractions.append(1.0-(number/total_pixels))
+        fractions.append(1.0 - (number / total_pixels))
 
     if args.device_name == 'cpu':
         my_weights = torch.FloatTensor(fractions)
     else:
         my_weights = torch.cuda.FloatTensor(fractions)
     print("Weighted Classes: {}".format(my_weights))
-    criterion = torch.nn.CrossEntropyLoss(weight=my_weights) #criterion for training (weigthed classes)
-    criterion_test = torch.nn.CrossEntropyLoss() #criterion for validation (no weighted classes)
+    criterion = torch.nn.CrossEntropyLoss(weight=my_weights)  # criterion for training (weigthed classes)
+    criterion_test = torch.nn.CrossEntropyLoss()  # criterion for validation (no weighted classes)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     metrics = {'f1_score': f1_score, 'auroc': roc_auc_score}
 
     print('Starting training now')
-    train_model(model,criterion,criterion_test,seg_dataloader,optimizer,bpath=output_dir,metrics=metrics,
-                num_epochs=args.epochs,device_name=args.device_name, metrics_name=args.metrics_name,
-                mfn=args.model_filename, model_name=args.model_name, pretrained=args.pretrained, lr=args.learning_rate, bs=args.batch_size, classes=args.classes)
+    train_model(model, criterion, criterion_test, seg_dataloader, optimizer, bpath=output_dir, metrics=metrics,
+                num_epochs=args.epochs, device_name=args.device_name, metrics_name=args.metrics_name,
+                mfn=args.model_filename, model_name=args.model_name, pretrained=args.pretrained, lr=args.learning_rate,
+                bs=args.batch_size, classes=args.classes)
+
 
 if __name__ == "__main__":
     main()
