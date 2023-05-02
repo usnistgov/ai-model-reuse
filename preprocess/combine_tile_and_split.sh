@@ -20,6 +20,6 @@ echo "yPieces: "${yPieces}
 
 #inputs_maindir=${root_folder}"/"${image_input_folder}
 python tiling.py --image_dir=${root_folder}"/"${mask_input_folder} --output_dir=${root_folder}"/tiled_masks" --xPieces=${xPieces} --yPieces=${yPieces}
-python combine_and_tile.py --image_dir=${root_folder}"/"${image_input_folder} --output_dir=${root_folder}"/tiled_images" --xPieces=${xPieces} --yPieces=${yPieces}
+python combine_and_tile.py --image_dir=${root_folder}"/"${image_input_folder} --output_dir=${root_folder}"/tiled_images" --channels "H1" "H1dark" --xPieces=${xPieces} --yPieces=${yPieces}
 
 python split.py --image_dir=${root_folder}"/tiled_images" --mask_dir=${root_folder}"/tiled_masks" --train_image_dir=${root_folder}"/train_images" --train_mask_dir=${root_folder}"/train_masks" --test_image_dir=${root_folder}"/test_images" --test_mask_dir=${root_folder}"/test_masks" --fraction 0.8

@@ -2,7 +2,7 @@
 # NIST-developed software is expressly provided "AS IS." NIST MAKES NO WARRANTY OF ANY KIND, EXPRESS, IMPLIED, IN FACT OR ARISING BY OPERATION OF LAW, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT AND DATA ACCURACY. NIST NEITHER REPRESENTS NOR WARRANTS THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED. NIST DOES NOT WARRANT OR MAKE ANY REPRESENTATIONS REGARDING THE USE OF THE SOFTWARE OR THE RESULTS THEREOF, INCLUDING BUT NOT LIMITED TO THE CORRECTNESS, ACCURACY, RELIABILITY, OR USEFULNESS OF THE SOFTWARE.
 # You are solely responsible for determining the appropriateness of using and distributing the software and you assume all risks associated with its use, including but not limited to the risks and costs of program errors, compliance with applicable laws, damage to or loss of data, programs or equipment, and the unavailability or interruption of operation. This software is not intended to be used in any situation where a failure could cause risk of injury or damage to property. The software developed by NIST employees is not subject to copyright protection within the United States.
 import itertools
-# from PIL import Image
+from PIL import Image
 import os
 import numpy as np
 import argparse
@@ -25,7 +25,12 @@ def parse_INFER_folder_names(folder_name):
     Folders are named by"
      "Experiment_identifier" _ "Sampletype" _ " AI Experiment Identifier" _ sampleid
     """
-    expt_name, sample_type, ai_expt, sample_id = folder_name.split("_")
+    try:
+        expt_name, sample_type, ai_expt, sample_id = folder_name.split("_")
+    except:
+        expt_name = folder_name
+        sample_type, ai_expt, sample_id = None, None, None
+
     return expt_name, sample_type, ai_expt, sample_id
 
 
@@ -45,14 +50,14 @@ def tile(final_stack, savepath, xPieces, yPieces, ext=".tif"):
     """
     fs = final_stack.shape
     imgheight, imgwidth = fs[1], fs[2]  # TODO: handle 3d
-    height = imgheight // yPieces
-    width = imgwidth // xPieces
+    height = imgheight // xPieces
+    width = imgwidth // yPieces
+    # Final tiles ignored as their larger sizes cant currently be handled.
     for i, j in itertools.product(range(yPieces), range(xPieces)):
-        startx = j * width
-        starty = i * height
-        # Final tiles removed as their larger sizes cant currently be handled.
-        endx = startx + width  # imgwidth  if j == xPieces - 1 else startx + width
-        endy = starty + height  # imgheight  if i == yPieces - 1 else starty + height
+        starty = j * height
+        startx = i * width
+        endy = starty + height
+        endx = startx + width
         crop_stack = final_stack[..., startx:endx, starty:endy]
         # bbox = (startx, endx, starty, endy)
         # print("Bbox: ", bbox, "bbox.shape = ", crop_stack.shape)
@@ -112,6 +117,9 @@ def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
     """
     if usechannels is None:
         usechannels = ['H0', 'H1', 'H1dark']
+    else:
+        assert all(ch in ['H0', 'H1', 'H1dark'] for ch in
+                   usechannels), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark'"
     image_dirname = os.path.basename(os.path.normpath(image_dir))
     expt_name, sample_type, ai_expt, sample_id = parse_INFER_folder_names(image_dirname)
     print(expt_name, sample_type, ai_expt, sample_id)
@@ -120,15 +128,18 @@ def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
         os.mkdir(output_dir)
     file_array, filename_array, xis, chs = [], [], [], []
     ext = None
-    for filename in os.listdir(image_dir):
+    filenames = [f for f in os.listdir(image_dir) if not os.path.isdir(f) if f.__contains__(".tif")]
+    for filename in filenames:
         filepath = os.path.join(image_dir, filename)
         file_array.append(filepath)
         filename_array.append(filename)
         _, _, _, xi, ch, ext = parse_INFER_file_name(filename)
         xis.append(xi), chs.append(ch)
+    # image_stack combines all images (all xi and channels) into a single stack
     image_stack = return_images_from_paths(file_array)
     # print("image_stack", image_stack.dtype)
-    nxis, nchs = list(np.unique(xis)), list(np.unique(chs))  # sorted values
+    assert all(ch in chs for ch in usechannels), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark'"
+    nxis, nchs = list(np.unique(xis)), list(np.unique(usechannels))  # sorted values
     # TODO: Update for 3D: example for 3d the value will be -3
     selected_stack = np.zeros((len(nxis), len(nchs)) + image_stack.shape[-2:], dtype=image_stack.dtype)
 
@@ -136,9 +147,13 @@ def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
         if chs[f] in usechannels:
             selected_stack[nxis.index(xis[f]), nchs.index(chs[f])] = image_stack[f]
     ss_shape = selected_stack.shape
+    # Combine XI and C dimensions
     final_stack = selected_stack.reshape((ss_shape[0] * ss_shape[1],) + ss_shape[2:])
     # add folder name
-    savepath = output_dir + "/" + f"{expt_name}_{sample_type}_{ai_expt}_{sample_id}"
+    if None in [sample_type, ai_expt, sample_id]:
+        savepath = output_dir + "/" + f"{expt_name}"
+    else:
+        savepath = output_dir + "/" + f"{expt_name}_{sample_type}_{ai_expt}_{sample_id}"
     # print(ss_shape,"fsdtype", final_stack.dtype)
     tile(final_stack, savepath, xPieces, yPieces, ext=ext)
 
@@ -148,17 +163,24 @@ def combine_subfolders(image_dir, output_dir, xPieces, yPieces, usechannels=None
     It is assumed that the image_dir has a list of folders with names corresponding to mask names.
     Each folder contains a set of images that can be combined to obtain a single measurement.
     """
-    for dirname in os.listdir(image_dir):
-        subdir = image_dir + "/" + dirname
+    nondirfiles = False
+    for name in os.listdir(image_dir):
+        dirorfile = image_dir + "/" + name
         # subdir = os.path.join(image_dir, dirname)
-        if os.path.isdir(subdir):
-            combine(subdir, output_dir, xPieces, yPieces)
+        if os.path.isdir(dirorfile):
+            combine(dirorfile, output_dir, xPieces, yPieces, usechannels=usechannels)
+        else:
+            nondirfiles = True
+    if nondirfiles:
+        combine(image_dir, output_dir, xPieces, yPieces, usechannels=usechannels)
 
 
 def main():
     parser = argparse.ArgumentParser(prog='split', description='Script that combines and tiles data')
     parser.add_argument('--image_dir', type=str, help='folder path to input images')
     parser.add_argument('--output_dir', type=str, help='folder path to saving output tiles')
+    parser.add_argument('--channels', type=str, nargs='+', help='example input: ["H1dark"]', required=False,
+                        default=None)
     parser.add_argument('--xPieces', type=int, help='number of image cuts along x-axis')
     parser.add_argument('--yPieces', type=int, help='number of image cuts along y-axis')
     args, unknown = parser.parse_known_args()
@@ -166,7 +188,7 @@ def main():
     if args.image_dir is None:
         print('ERROR: missing input image dir ')
         return
-    combine_subfolders(args.image_dir, args.output_dir, args.xPieces, args.yPieces)
+    combine_subfolders(args.image_dir, args.output_dir, args.xPieces, args.yPieces, usechannels=args.channels)
     # image_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/CG1D_INFER_ML_test/"
     # output_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/CG1D_Prepared_Data/"
     # xPieces = 10

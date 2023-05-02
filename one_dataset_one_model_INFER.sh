@@ -31,7 +31,7 @@ then
  echo '--data='${data}' --train_images='${train_images}' --train_masks='${train_masks}' --test_images='${test_images}' --test_masks='${test_masks}
  echo '--output_dir='${output_dir}' --epochs='${epochs}' --model_filename='${model_filename}' --device_name='${device_name}' --batch_size='${batch_size}
  echo '--learning_rate='${learning_rate}' --metrics_name='${mn}' --model_name='${model_name}' --pretrained='${pretrained}' --classes='${num_classes}
- python pytorch_models/train_INFER.py --data=${data} --train_images=${train_images} --train_masks=${train_masks} --test_images=${test_images} --test_masks=${test_masks} --output_dir=${output_dir} --epochs=${epochs} --model_filename=${model_filename} --device_name=${device_name} --batch_size=${batch_size} --learning_rate=${learning_rate} --metrics_name=${mn} --model_name=${model_name} --pretrained=${pretrained} --classes=${num_classes}
+ python pytorch_models/INFER_train.py --data=${data} --train_images=${train_images} --train_masks=${train_masks} --test_images=${test_images} --test_masks=${test_masks} --output_dir=${output_dir} --epochs=${epochs} --model_filename=${model_filename} --device_name=${device_name} --batch_size=${batch_size} --learning_rate=${learning_rate} --metrics_name=${mn} --model_name=${model_name} --pretrained=${pretrained} --classes=${num_classes}
 else
   echo 'unet model'
   t_train_image_folder=${data}"/"${train_images}

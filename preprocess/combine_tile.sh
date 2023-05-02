@@ -17,4 +17,4 @@ echo "xPieces: "${xPieces}
 echo "yPieces: "${yPieces}
 
 #inputs_maindir=${root_folder}"/"${image_input_folder}
-python combine_and_tile.py --image_dir=${root_folder}"/"${image_input_folder} --output_dir=${root_folder}"/tiled_Measured" --xPieces=${xPieces} --yPieces=${yPieces}
+python combine_and_tile.py --image_dir=${root_folder}"/"${image_input_folder} --output_dir=${root_folder}"/tiled_"${image_input_folder} --channels "H1dark" --xPieces=${xPieces} --yPieces=${yPieces}

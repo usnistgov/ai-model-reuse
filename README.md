@@ -119,6 +119,7 @@ implementations of multiple artificial intelligence (AI) models. It has been dev
     - conda create -n airec_test python=3.8 (or conda create --prefix <dir><nn-util> python=3.8)
     - conda activate airec_test (or conda activate <dir><airec_test>)
     - conda install pytorch==1.7.0 torchvision==0.8.0 torchaudio==0.7.0 cudatoolkit=11.0 -c pytorch
+    - (try -c conda-forge if that doesnt work)
     - sometimes needed: pip install numpy==1.19.2 Cython==3.0a1
     - pip install scikit-image
     - pip install GPUtil (or conda install -c conda-forge gputil )
