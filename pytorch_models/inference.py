@@ -34,6 +34,7 @@ def format_image(x):
     x = np.transpose(x, [2, 0, 1])
     return x
 
+
 def createDeepLabv3(outputchannels=1):
     """DeepLabv3 class with custom head
     Args:
@@ -48,6 +49,7 @@ def createDeepLabv3(outputchannels=1):
     # Set the model in training mode
     model.train()
     return model
+
 
 # def confusion_matrix(pred, mask):
 #     matrix = np.zeros((4,4))
@@ -72,12 +74,15 @@ def confusion_matrix(predictions, masks, classes):
     #         for w in range(pred.shape[1]):
     #             matrix[pred[h][w]][mask[h][w]] += 1
     return matrix
+
+
 ''' 
 run inference with model_filemath on images in image_filepath and 
 save results in output_dir
 '''
-def inference(model_filepath, image_filepath, output_dir):
 
+
+def inference(model_filepath, image_filepath, output_dir):
     model = torch.load(model_filepath)
     model.eval()
     file_array = []
@@ -108,23 +113,27 @@ def inference(model_filepath, image_filepath, output_dir):
         # img = data_transform(img)
         img = torch.unsqueeze(img, 0)
         img = img.type(torch.cuda.FloatTensor)
+        print(f"IMGSHAPE: {img.shape}")
         pred = model(img)
         pred = pred['out']
 
         pred = torch.squeeze(pred, 0)
         pred = torch.argmax(pred, 0)
         pred = pred.cpu().detach().numpy().astype(np.uint8)
-        #name_start = file_array[i].find('2')
-        #name = file_array[i] #[name_start:100]
+        # name_start = file_array[i].find('2')
+        # name = file_array[i] #[name_start:100]
         basename = os.path.basename(file_array[i])
         output_fullpath = str(output_dir) + "/pred_{}".format(basename)
         print('output_fullpath:', output_fullpath)
         skimage.io.imsave(output_fullpath, pred)
 
+
 '''
 run inference and compute the accuracy against the ground truth mask
 '''
-def inference_withmask(model_filepath, image_filepath, mask_filepath,num_classes, output_dir):
+
+
+def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classes, output_dir):
     start_time = time.time()
     model = torch.load(model_filepath)
     model.eval()
@@ -189,7 +198,7 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath,num_classes
         gt_mask = skimage.io.imread(mask_file_array[match_index])
         # bin_gt_mask = gt_mask > 0
         # bin_pred = pred > 0
-        #acc, pred, rec, f1 = segm_comp.segmentation_comparison(gt_mask, pred, output_dir, mask_file_array[match_index])
+        # acc, pred, rec, f1 = segm_comp.segmentation_comparison(gt_mask, pred, output_dir, mask_file_array[match_index])
 
         # this estimation does not work when processing image tiles that contain a small subset of labels
         # num_classes = gt_mask.max(axis=(0, 1))
@@ -199,22 +208,24 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath,num_classes
         # print('INFO: estimated number of classes:', num_classes)
         # num_classes = 10
 
-        #precision_score, recall_score, accuracy_score, f1_score = metrics_masks(mask_file_array[match_index],pred, gt_mask, num_classes, output_dir)
+        # precision_score, recall_score, accuracy_score, f1_score = metrics_masks(mask_file_array[match_index],pred, gt_mask, num_classes, output_dir)
 
-        precision_score, recall_score, accuracy_score, f1_score = segm_comp.metrics_masks(mask_file_array[match_index], pred, gt_mask, num_classes, output_dir)
+        precision_score, recall_score, accuracy_score, f1_score = segm_comp.metrics_masks(mask_file_array[match_index],
+                                                                                          pred, gt_mask, num_classes,
+                                                                                          output_dir)
 
         avg_precision_score += precision_score
         avg_recall_score += recall_score
         avg_accuracy_score += accuracy_score
         avg_f1_score += f1_score
         ##########################
-        #name_start = file_array[i].find('2')
-        #name = file_array[i] #[name_start:100]
+        # name_start = file_array[i].find('2')
+        # name = file_array[i] #[name_start:100]
 
         ############
         # TODO disabled for INFER numerical evaluations - should be enabled in the future
         basename = os.path.basename(file_array[i])
-        #output_fullpath = str(output_dir) + "/pred_{}".format(basename)
+        # output_fullpath = str(output_dir) + "/pred_{}".format(basename)
         output_fullpath = str(output_dir) + "/{}".format(basename)
         print('output_fullpath:', output_fullpath)
         skimage.io.imsave(output_fullpath, pred)
@@ -226,7 +237,8 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath,num_classes
         avg_f1_score /= len(file_array)
 
     start_time = time.time()
-    fieldnames = ['GTMask_filepath', 'PredMask_filepath','Precision', 'Recall', 'Accuracy', 'F1-Score', 'Exec_time [seconds]']
+    fieldnames = ['GTMask_filepath', 'PredMask_filepath', 'Precision', 'Recall', 'Accuracy', 'F1-Score',
+                  'Exec_time [seconds]']
     metrics_name = 'summary_accuracy.csv'
     path_to_file = os.path.join(output_dir, metrics_name)
     print('INFO: summary output stats:', path_to_file)
@@ -249,6 +261,7 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath,num_classes
     with open(os.path.join(output_dir, metrics_name), 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writerow(batchsummary)
+
 
 # def metrics_masks(gt_file_name, pred_mask, gt_mask, num_classes, output_dir):
 #     start_time = time.time()
@@ -333,12 +346,18 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath,num_classes
 
 def main():
     # print('hello')
-    parser = argparse.ArgumentParser(prog='inference', description='Script which performs inference using models in torchvision library')
-    parser.add_argument('--model_filepath', required=True, type=str)  # this should be FULL PATH of the weights.pt file you generated from train.py
-    parser.add_argument('--image_dirpath', required=True, type=str)  # this should be FULL PATH of your images to perform inference on
-    parser.add_argument('--mask_dirpath',  required=False, default=None, type=str)  # FULL PATH of your masks to compare images with for accuracy
-    parser.add_argument('--mask_numclasses', required=False, default=-1,type=int)  # number of classes in ground truth masks
-    parser.add_argument('--output_dirpath', required=True, type=str) #this should be FULL PATH of where you want to store your predictions
+    parser = argparse.ArgumentParser(prog='inference',
+                                     description='Script which performs inference using models in torchvision library')
+    parser.add_argument('--model_filepath', required=True,
+                        type=str)  # this should be FULL PATH of the weights.pt file you generated from train.py
+    parser.add_argument('--image_dirpath', required=True,
+                        type=str)  # this should be FULL PATH of your images to perform inference on
+    parser.add_argument('--mask_dirpath', required=False, default=None,
+                        type=str)  # FULL PATH of your masks to compare images with for accuracy
+    parser.add_argument('--mask_numclasses', required=False, default=-1,
+                        type=int)  # number of classes in ground truth masks
+    parser.add_argument('--output_dirpath', required=True,
+                        type=str)  # this should be FULL PATH of where you want to store your predictions
 
     args, unknown = parser.parse_known_args()
 
@@ -358,14 +377,16 @@ def main():
         Path(args.output_dirpath).mkdir()
 
     if args.mask_dirpath is None:
-        inference(args.model_filepath, args.image_dirpath,  args.output_dirpath)
+        inference(args.model_filepath, args.image_dirpath, args.output_dirpath)
     else:
         print('mask_dirpath:', args.mask_dirpath)
         if args.mask_numclasses < 0:
             print('ERROR: missing input mask_numclasses !!!')
             return
         print('mask_numclasses:', args.mask_numclasses)
-        inference_withmask(args.model_filepath, args.image_dirpath, args.mask_dirpath, args.mask_numclasses, args.output_dirpath)
+        inference_withmask(args.model_filepath, args.image_dirpath, args.mask_dirpath, args.mask_numclasses,
+                           args.output_dirpath)
+
 
 if __name__ == "__main__":
     main()

@@ -5,14 +5,9 @@
 import csv
 import sys
 import time
-
+import warnings
 from numpy import unicode
-
 import INFER_Dataset
-
-if sys.version_info[0] < 3:
-    raise Exception('Python3 required')
-
 import numpy as np
 import torch
 import skimage.io
@@ -20,13 +15,14 @@ import skimage
 import skimage.transform
 import argparse
 import os
-import segm_comparisons as segm_comp
-
+import INFER_segm_comparisons as segm_comp
 from pathlib import Path
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from torchvision import models
 from torchvision import transforms
 from PIL import Image
+
+warnings.filterwarnings("ignore")
 
 
 def format_image(x):
@@ -50,14 +46,6 @@ def createDeepLabv3(outputchannels=1):
     model.train()
     return model
 
-
-# def confusion_matrix(pred, mask):
-#     matrix = np.zeros((4,4))
-#     for h in range(pred.shape[0]):
-#         for w in range(pred.shape[1]):
-#             matrix[pred[h][w]][mask[h][w]] += 1
-#
-#     return matrix
 
 def confusion_matrix(predictions, masks, classes):
     matrix = np.zeros((classes, classes))
@@ -94,8 +82,12 @@ def inference(model_filepath, image_filepath, output_dir):
         image = skimage.io.imread(file_array[i])
         # image = np.expand_dims(image, 0)
         # image = np.concatenate((image, image, image), axis=0)
-
-        image = INFER_Dataset.INFERSegmentationDataset.zscore_normalize(image)
+        if INFER_Dataset.INFERSegmentationDataset.use_normalization == "zscore_normalize":
+            image = INFER_Dataset.INFERSegmentationDataset.zscore_normalize(image)
+        else:
+            image = image.astype(np.float32)
+            pass
+            # print("ignoring normalization")
 
         # if (image.dtype != "uint8"):
         #     image = image / 65536  # assumes uint16  --> 256*256
@@ -123,7 +115,7 @@ def inference(model_filepath, image_filepath, output_dir):
         # name = file_array[i] #[name_start:100]
         basename = os.path.basename(file_array[i])
         output_fullpath = str(output_dir) + "/pred_{}".format(basename)
-        print('output_fullpath:', output_fullpath)
+        # print('outputfile:', basename, end='\t')
         skimage.io.imsave(output_fullpath, pred)
 
 
@@ -142,14 +134,17 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
         file_array.append(filepath)
 
     mask_file_array = []
-    for filename in os.listdir(mask_filepath):
-        filepath = os.path.join(mask_filepath, filename)
-        mask_file_array.append(filepath)
+    for mfilename in os.listdir(mask_filepath):
+        mfilepath = os.path.join(mask_filepath, mfilename)
+        mask_file_array.append(mfilepath)
 
     avg_precision_score = 0.0
     avg_recall_score = 0.0
     avg_accuracy_score = 0.0
     avg_f1_score = 0.0
+    avg_dice = 0.0
+    avg_jaccard = 0.0
+    avg_mse = 0.0
     for i in range(len(file_array)):
         image_basename = os.path.basename(file_array[i])
         found_match = False
@@ -166,25 +161,16 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
 
         # load intensity image
         image = skimage.io.imread(file_array[i])
-        # image = np.expand_dims(image, 0)
-        # image = np.concatenate((image, image, image), axis=0)
 
-        image = INFER_Dataset.INFERSegmentationDataset.zscore_normalize(image)
-
-        # if (image.dtype != "uint8"):
-        #     image = image / 65536  # assumes uint16  --> 256*256
-        #     # sample['image'] = torch.from_numpy(image)
-        # else:
-        #     image = image / 255
-        #     # sample['image'] = sample['image'] / 255
-        #     # sample['image'] = torch.from_numpy(image)
+        if INFER_Dataset.INFERSegmentationDataset.use_normalization == "zscore_normalize":
+            image = INFER_Dataset.INFERSegmentationDataset.zscore_normalize(image)
+        else:
+            image = image.astype(np.float32)
+            pass
+            # print("ignoring normalization")
 
         img = torch.from_numpy(image)
 
-        # img = Image.open(file_array[i])
-        # img = img.convert('RGB')
-        # data_transform = transforms.Compose([transforms.ToTensor()])
-        # img = data_transform(img)
         img = torch.unsqueeze(img, 0)
         img = img.type(torch.cuda.FloatTensor)
         pred = model(img)
@@ -195,28 +181,17 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
         pred = pred.cpu().detach().numpy().astype(np.uint8)
 
         gt_mask = skimage.io.imread(mask_file_array[match_index])
-        # bin_gt_mask = gt_mask > 0
-        # bin_pred = pred > 0
-        # acc, pred, rec, f1 = segm_comp.segmentation_comparison(gt_mask, pred, output_dir, mask_file_array[match_index])
 
-        # this estimation does not work when processing image tiles that contain a small subset of labels
-        # num_classes = gt_mask.max(axis=(0, 1))
-        # smallest_label = gt_mask.min(axis=(0, 1))
-        # if smallest_label == 0:
-        #     num_classes = num_classes + 1
-        # print('INFO: estimated number of classes:', num_classes)
-        # num_classes = 10
-
-        # precision_score, recall_score, accuracy_score, f1_score = metrics_masks(mask_file_array[match_index],pred, gt_mask, num_classes, output_dir)
-
-        precision_score, recall_score, accuracy_score, f1_score = segm_comp.metrics_masks(mask_file_array[match_index],
-                                                                                          pred, gt_mask, num_classes,
-                                                                                          output_dir)
+        precision_score, recall_score, accuracy_score, f1_score, jaccard_score, dice_score, mse = \
+            segm_comp.metrics_masks(mask_file_array[match_index], pred, gt_mask, num_classes, output_dir)
 
         avg_precision_score += precision_score
         avg_recall_score += recall_score
         avg_accuracy_score += accuracy_score
         avg_f1_score += f1_score
+        avg_dice += dice_score
+        avg_jaccard += jaccard_score
+        avg_mse += mse
         ##########################
         # name_start = file_array[i].find('2')
         # name = file_array[i] #[name_start:100]
@@ -224,9 +199,8 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
         ############
         # TODO disabled for INFER numerical evaluations - should be enabled in the future
         basename = os.path.basename(file_array[i])
-        # output_fullpath = str(output_dir) + "/pred_{}".format(basename)
-        output_fullpath = str(output_dir) + "/{}".format(basename)
-        print('output_fullpath:', output_fullpath)
+        output_fullpath = str(output_dir) + "/pred_{}".format(basename)
+        # print('done:', basename, end='\t')
         skimage.io.imsave(output_fullpath, pred)
 
     if len(file_array) > 0:
@@ -234,12 +208,14 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
         avg_recall_score /= len(file_array)
         avg_accuracy_score /= len(file_array)
         avg_f1_score /= len(file_array)
-
+        avg_dice /= len(file_array)
+        avg_jaccard /= len(file_array)
+        avg_mse /= len(file_array)
     start_time = time.time()
-    fieldnames = ['GTMask_filepath', 'PredMask_filepath', 'Precision', 'Recall', 'Accuracy', 'F1-Score',
-                  'Exec_time [seconds]']
-    metrics_name = 'summary_accuracy.csv'
-    path_to_file = os.path.join(output_dir, metrics_name)
+    fieldnames = ['GTMask_filepath', 'PredMask_filepath', 'Precision', 'Recall', 'Accuracy', 'F1-Score', 'Dice',
+                  'Jaccard', 'MSE', 'Exec_time [seconds]']
+    metrics_name = '_metrics.csv'
+    path_to_file = output_dir + metrics_name
     print('INFO: summary output stats:', path_to_file)
     file_exists = os.path.exists(path_to_file)
     if not file_exists:
@@ -253,94 +229,16 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
     batchsummary['Recall'] = avg_recall_score
     batchsummary['Accuracy'] = avg_accuracy_score
     batchsummary['F1-Score'] = avg_f1_score
+    batchsummary['Dice'] = avg_dice
+    batchsummary['Jaccard'] = avg_jaccard
+    batchsummary['MSE'] = avg_mse
     exec_time = time.time() - start_time
     exec_time = int(exec_time)
     batchsummary['Exec_time [seconds]'] = exec_time
     print(batchsummary)
-    with open(os.path.join(output_dir, metrics_name), 'a', newline='') as csvfile:
+    with open(path_to_file, 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writerow(batchsummary)
-
-
-# def metrics_masks(gt_file_name, pred_mask, gt_mask, num_classes, output_dir):
-#     start_time = time.time()
-#     fieldnames = ['Mask_name', 'Precision', 'Recall', 'Accuracy', 'F1-Score', 'Exec_time [seconds]']
-#     metrics_name = 'segmentation_accuracy_perfile.csv'
-#     path_to_file = os.path.join(output_dir, metrics_name)
-#     print('INFO: pytorch model output stats:', os.path.join(output_dir, metrics_name))
-#     file_exists = os.path.exists(path_to_file)
-#     if not file_exists:
-#         with open(os.path.join(output_dir, metrics_name), 'w', newline='') as csvfile:
-#             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-#             writer.writeheader()
-#
-#     batchsummary = {a: [0] for a in fieldnames}
-#     batchsummary['Mask_name'] = os.path.basename(gt_file_name)
-#
-#     conf_matrix = confusion_matrix(pred_mask, gt_mask, num_classes)
-#     #print('INFO: conf_matrix:', conf_matrix)
-#
-#     # Precision Score = TP / (FP + TP)
-#     row_sums = np.sum(conf_matrix, 0)
-#     running_precision = 0
-#     #sums = np.sum(cf, axis=1).tolist()
-#     avgsubtract = 0
-#     for i in range(0, num_classes):
-#         toadd = 0
-#         if row_sums[i] == 0:
-#             toadd = 0
-#             avgsubtract += 1
-#         else:
-#             toadd = conf_matrix[i][i] / row_sums[i]
-#         running_precision += toadd
-#
-#     precision_score = running_precision / (num_classes - avgsubtract)
-#
-#     # Recall Score = TP / (FN + TP)
-#     #col_sums = np.sum(cf, axis=0).tolist()
-#     col_sums = np.sum(conf_matrix, axis=1)
-#     running_recall = 0
-#     avgsubtract = 0
-#     for i in range(0, num_classes):
-#         toadd = 0
-#         if col_sums[i] == 0:
-#             toadd = 0
-#             avgsubtract += 1
-#         else:
-#             toadd = conf_matrix[i][i] / col_sums[i]
-#         running_recall += toadd
-#     recall_score = running_recall / (num_classes - avgsubtract)
-#
-#     # F1 Score = 2* Precision Score * Recall Score/ (Precision Score + Recall Score/)
-#     f1_score = 2.0 * (precision_score * recall_score) / (precision_score + recall_score)
-#
-#     #Accuracy Score = (TP + TN) / (TP + FN + TN + FP)
-#     tp_and_tn = 0.0
-#     total_count = 0.0
-#     for h in range(conf_matrix.shape[0]):
-#         for w in range(conf_matrix.shape[1]):
-#             if h == w:
-#                 tp_and_tn = tp_and_tn + conf_matrix[h][w]
-#             total_count = total_count + conf_matrix[h][w]
-#
-#     if total_count > 0:
-#         accuracy_score = tp_and_tn/total_count
-#     else:
-#         accuracy_score = 0.0
-#
-#     batchsummary['Precision'] = precision_score
-#     batchsummary['Recall'] = recall_score
-#     batchsummary['Accuracy'] = accuracy_score
-#     batchsummary['F1-Score'] = f1_score
-#     seconds = time.time() - start_time
-#     seconds = int(seconds)
-#     batchsummary['Exec_time [seconds]'] = seconds
-#     print(batchsummary)
-#     with open(os.path.join(output_dir, metrics_name), 'a', newline='') as csvfile:
-#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-#         writer.writerow(batchsummary)
-#
-#     return precision_score, recall_score, accuracy_score, f1_score
 
 
 def main():
@@ -370,9 +268,10 @@ def main():
 
     print('model_filepath:', args.model_filepath)
     print('image_dirpath:', args.image_dirpath)
+    print('mask_dirpath:', args.mask_dirpath)
     print('output_dirpath:', args.output_dirpath)
 
-    if not Path(args.output_dirpath).exists():
+    if not os.path.exists(args.output_dirpath):
         Path(args.output_dirpath).mkdir()
 
     if args.mask_dirpath is None:

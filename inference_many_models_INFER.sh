@@ -6,11 +6,13 @@
 
 model_directory=$1
 image_directory=$2
-output_directory=$3
+mask_directory=$3
+output_directory=$4
 
 #echo 'name_dataset: '$name_dataset
 echo 'model_directory: '$model_directory
 echo 'image_directory: '$image_directory
+echo 'mask_directory: '$mask_directory
 echo 'output_directory: '$output_directory
 
 for file in $(find $model_directory); do
@@ -37,8 +39,8 @@ for file in $(find $model_directory); do
       #echo 'input parameters:'
       echo '--model_filepath'${file} '--image_dirpath'${image_directory} '--output_dirpath'${output_dir}
       if [[ ${file_basename} != *"unet"* ]]; then
-        echo 'runnimg pytorch model inference'
-        python pytorch_models/inference_INFER.py --model_filepath=${file} --image_dirpath=${image_directory} --output_dirpath=${output_dir}
+        echo 'running pytorch model inference' # TODO: mask classes handling
+        python pytorch_models/INFER_inference.py --model_filepath=${file} --image_dirpath=${image_directory} --mask_dirpath=${mask_directory} --mask_numclasses=255 --output_dirpath=${output_dir}
       else
         echo 'running unet model inference'
         python UNet/infer_dataset.py --model_filepath=${file} --image_dirpath=${image_directory} --output_dirpath=${output_dir}
