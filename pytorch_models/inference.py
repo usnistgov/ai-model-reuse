@@ -6,7 +6,7 @@ import csv
 import sys
 import time
 
-from numpy import unicode
+from numpy.compat import unicode
 
 import segdataset
 

@@ -24,16 +24,22 @@ __email__ = "peter.bajcsy@nist.gov"
 def power_func(x, a, b):
     return a * np.power(x, b)
 
+
 def exp_func(x, a, b):
     return a * np.power(b, x)
 
+
 def linear_func(x, a, b):
     return a * x + b
+
+
 '''
 This method estimates power function and exponential function coefficients from the first N points
 the estimated values and their delta with respect to measured values are returned (and added to the Panda Data Frame)
 The coefficients are saved to output_coefficients_file
 '''
+
+
 def estimate_pred_funcion(x_points, y_points, x_final, y_final_loss, df, basename, label_name, output_coeficients_file):
     plt.scatter(x_points, y_points)
 
@@ -54,7 +60,6 @@ def estimate_pred_funcion(x_points, y_points, x_final, y_final_loss, df, basenam
         print('ERROR: could not find an exponential function fit; use linear fit')
         exp_popt, exp_pcov = curve_fit(linear_func, x_points, y_points, maxfev=1000)
         exp_flag = False
-
 
     power_y_est_points = []
     power_delta_points = []
@@ -91,21 +96,24 @@ def estimate_pred_funcion(x_points, y_points, x_final, y_final_loss, df, basenam
     df[est_points_label] = power_y_est_points
     delta_label = 'Delta_' + est_points_label
     df[delta_label] = power_delta_points
-    
+
     est_points_label = 'ExpF_' + label_name
     df[est_points_label] = exp_y_est_points
     delta_label = 'Delta_' + est_points_label
     df[delta_label] = exp_delta_points
-    
-    coeff_points = pd.DataFrame([[basename, label_name, power_popt[0], power_popt[1],exp_popt[0], exp_popt[1]]])
+
+    coeff_points = pd.DataFrame([[basename, label_name, power_popt[0], power_popt[1], exp_popt[0], exp_popt[1]]])
     coeff_points.to_csv(output_coeficients_file, mode='a', header=False, index=False)
     return power_y_est_points, power_delta_points, exp_y_est_points, exp_delta_points, pow_flag, exp_flag
+
 
 '''
 This is the main routine for creating graphs and computing predictions
 '''
+
+
 def create_graphs(in_path, out_path):
-     # in_path = "/home/pnb/trainingOutput/pytorchOutput_cryoem/*.csv"
+    # in_path = "/home/pnb/trainingOutput/pytorchOutput_cryoem/*.csv"
     # out_path = "/home/pnb/trainingOutput/pytorchOutput_cryoem/graphs"
 
     # Check whether the specified output path exists or not
@@ -133,14 +141,13 @@ def create_graphs(in_path, out_path):
             # skip the summary file named coefficients.csv
             continue
 
-        df = pd.read_csv(fname,  engine='python', warn_bad_lines=True, error_bad_lines=True)
+        df = pd.read_csv(fname, engine='python', warn_bad_lines=True, error_bad_lines=True)
 
         if df.shape[0] < 20:
             print('ERROR: reading file:', fname)
             print('ERROR - insufficient number of epochs < 20: df:', df.shape[0])
             print('DEBUG: df=', df)
             continue
-
 
         # gather data for power function fit from the CSV file
         x_10 = np.array(df['epoch'][0:10])
@@ -280,7 +287,7 @@ def create_graphs(in_path, out_path):
             plt.scatter(x_final, exp_y_est_20_test, c='lightblue', s=10, label='Lin_P20_Test')
 
         plt.scatter(x_final, np.array(df['Test_loss'][0:]), c='black', s=10, label='Test Loss')
-        #plt.ylim([25, 50])
+        # plt.ylim([25, 50])
 
         plt.legend(loc="upper right")
         title_test = basename[:-4] + ': Test Loss = f(epoch index)'
@@ -292,7 +299,8 @@ def create_graphs(in_path, out_path):
         print('INFO: outGraph_test:', outGraph_test)
         plt.savefig(outGraph_test)
 
-     # plt.show()
+    # plt.show()
+
 
 def main():
     # Setup the Argument parsing

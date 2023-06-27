@@ -135,13 +135,15 @@ def get_dice_batch(predictions, masks):
         mask = torch.squeeze(masks[i], 0)
         mask = mask.cpu().detach().numpy().astype(np.uint8)
         # print("maskshape", mask.shape,"predshape", pred.shape)
-        jaccard_coeff = jaccard_score(mask.flatten(),pred.flatten(), average='micro')
+        jaccard_coeff = jaccard_score(mask.flatten(), pred.flatten(), average='micro')
         #  https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
         dice_coeffs = (2 * jaccard_coeff) / (jaccard_coeff + 1)
         # print("DICE", dice_coeffs, pred.shape, mask.shape)
         total_dice += dice_coeffs
     avg_dice = total_dice / length
     return avg_dice
+
+
 def get_jaccard_batch(predictions, masks):
     total_jaccard = 0
     length = predictions.shape[0]
@@ -151,7 +153,7 @@ def get_jaccard_batch(predictions, masks):
         mask = torch.squeeze(masks[i], 0)
         mask = mask.cpu().detach().numpy().astype(np.uint8)
         # print("maskshape", mask.shape,"predshape", pred.shape)
-        jaccard_coeff = jaccard_score(mask.flatten(),pred.flatten(), average='micro')
+        jaccard_coeff = jaccard_score(mask.flatten(), pred.flatten(), average='micro')
         #  https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
         total_jaccard += jaccard_coeff
     avg_jaccard = total_jaccard / length
@@ -177,12 +179,13 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
     since = time.time()
     # best_model_wts = copy.deepcopy(model.state_dict())
     best_loss = 1e10
+    best_epoch = 0
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     model.to(device)
     # TODO: add chosen_metrics keys to fieldnames
     fieldnames = ['Model', 'Pretrained', 'LR', 'Batch_Size', 'epoch', 'Seconds', 'Train_loss', 'Test_loss',
-                  'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score', 'Dice','Jaccard', 'MSE']
+                  'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score', 'Dice', 'Jaccard', 'MSE']
     print('INFO: pytorch model output stats:', os.path.join(bpath, metrics_name))
 
     with open(os.path.join(bpath, metrics_name), 'w', newline='') as csvfile:
@@ -302,6 +305,8 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
                 running_loss += test_loss.item()
                 if test_loss < best_loss:
                     best_loss = test_loss
+                    best_epoch = epoch
+                    best_model = model
         epoch_loss = running_loss / len(dataloaders['Test'])
         epoch_accuracy = running_acc / len(dataloaders['Test'])
         epoch_dice = running_dice / len(dataloaders['Test'])
@@ -348,10 +353,11 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
         with open(os.path.join(bpath, metrics_name), 'a', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow(batchsummary)
-        if epoch == num_epochs:
-            fullPath = str(bpath) + '/' + str(mfn)
-            torch.save(model, fullPath)
-
+        # if epoch == num_epochs:# TODO replace with best model
+        #     fullPath = str(bpath) + '/' + str(mfn)
+        #     torch.save(model, fullPath)
+    fullPath = str(bpath) + '/' + str(mfn)
+    torch.save(best_model, fullPath)
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
@@ -455,7 +461,7 @@ def main():
 
     seg_dataloader = dataloader_class.dataloaders  # grab dataloader from the class
     if (len(seg_dataloader['Train']) < 1 or len(seg_dataloader['Test']) < 1):
-        print('ERROR: could not find train or test data len(train):', (seg_dataloader['Train']))
+        print('ERROR: could not find train or test data len(train):', len(seg_dataloader['Train']))
         print('len(test):', len(seg_dataloader['Test']))
 
     toBool = True
