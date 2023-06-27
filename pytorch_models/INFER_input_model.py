@@ -228,14 +228,14 @@ if __name__ == "__main__":
     # from torchvision import models
     #
     outputchannels = 255
-    input_channels = 252
-    image_shape = (252, 2000, 2000)
+    input_channels = 168
+    image_shape = (input_channels, 2000, 2000)
     window = 200
     # infer_input_model = LSTMModel(input_size=input_channels, hidden_size=32, num_layers=2,
     #                               num_classes=outputchannels)
     # infer_input_model = INFERFeatureExtractor1D(input_channels=input_channels, output_channels=outputchannels)
     infer_input_model = CombinedModel(input_channels, None, outputchannels, window_size=200, batchsize=80)
-    print(summaryX(infer_input_model, torch.zeros((80, 252, window, window))))
+    print(summaryX(infer_input_model, torch.zeros((80, 168, window, window))))
     # print(summary(infer_input_model, (252, window, window), batch_size=80))
     # preset_model = models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=outputchannels,
     #                                                       progress=True)

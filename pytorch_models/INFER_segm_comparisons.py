@@ -167,10 +167,21 @@ def metrics_masks(gt_file_name, pred_mask, gt_mask, num_classes, output_dir):
         accuracy_score = 0.0
     seconds = time.time() - start_time
     seconds = int(seconds)
+    # print()
+    # print(f"1: {np.unique(gt_mask).tolist()}, {np.unique(pred_mask).tolist()}")
+    # print(f"2: {np.unique(gt_mask).tolist() + np.unique(pred_mask).tolist()}")
+    # print(f"3: {set(np.unique(gt_mask).tolist() + np.unique(pred_mask).tolist())}")
+    # print(f"4: {list(set(np.unique(gt_mask).tolist() + np.unique(pred_mask).tolist()))}")
+    all_labels = sorted(list(set(np.unique(gt_mask).tolist() + np.unique(pred_mask).tolist())))
+    labelwise_dice = {}
+    labelwise_jaccard = jaccard_score(gt_mask.flatten(), pred_mask.flatten(), labels=all_labels, average=None)
+    for l, label in enumerate(all_labels):
+        labelwise_dice[f'{label}'] = 2 * labelwise_jaccard[l] / (labelwise_jaccard[l] + 1)
+
     jaccard_coeff = jaccard_score(gt_mask.flatten(), pred_mask.flatten(), average='micro')
     dice_coeff = (2 * jaccard_coeff) / (jaccard_coeff + 1)
     mse_coeff = mean_squared_error(gt_mask.flatten(), pred_mask.flatten())
-    return precision_score, recall_score, accuracy_score, f1_score, jaccard_coeff, dice_coeff, mse_coeff
+    return precision_score, recall_score, accuracy_score, f1_score, jaccard_coeff, dice_coeff, mse_coeff, labelwise_dice
 
 
 def confusion_matrix(predictions, masks, classes):
