@@ -236,6 +236,8 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
                 running_loss += test_loss.item()
                 if test_loss < best_loss:
                     best_loss = test_loss
+                    best_epoch = epoch
+                    best_model = model
         epoch_loss = running_loss / len(dataloaders['Test'])
         epoch_accuracy = running_acc / len(dataloaders['Test'])
         cf = np.sum(matrices, 0)
@@ -276,10 +278,11 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, metric
         with open(os.path.join(bpath, metrics_name), 'a', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow(batchsummary)
-        if epoch == num_epochs:
-            fullPath = str(bpath) + '/' + str(mfn)
-            torch.save(model, fullPath)
-
+        # if epoch == num_epochs:
+        #     fullPath = str(bpath) + '/' + str(mfn)
+        #     torch.save(model, fullPath)
+    fullPath = str(bpath) + '/' + str(mfn)
+    torch.save(best_model, fullPath)
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
@@ -383,7 +386,7 @@ def main():
 
     seg_dataloader = dataloader_class.dataloaders  # grab dataloader from the class
     if (len(seg_dataloader['Train']) < 1 or len(seg_dataloader['Test']) < 1):
-        print('ERROR: could not find train or test data len(train):', (seg_dataloader['Train']))
+        print('ERROR: could not find train or test data len(train):', len(seg_dataloader['Train']))
         print('len(test):', len(seg_dataloader['Test']))
 
     toBool = True

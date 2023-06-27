@@ -98,8 +98,8 @@ def compute_comparison_metrics(in_path, out_path):
         df = pd.read_csv(fname)
         if df.shape[0] < 20:
             print('ERROR in comparison_metrics: reading file:', fname)
-            print('ERROR - insufficient number of epochs < 20: df:', df.shape[0])
-            print('DEBUG: df=', df)
+            print('ERROR - insufficient number of epochs < 20: dataF:', df.shape[0])
+            print('DEBUG: dataF=', df)
             continue
         # gather data for power function fit from the CSV file
         x_final = np.array(df['Seconds'][0:])

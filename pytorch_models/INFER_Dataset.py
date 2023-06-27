@@ -50,6 +50,7 @@ class INFERSegmentationDataset(VisionDataset):
     The transforms passed would be applied to both the Images and Masks.
     """
     use_normalization = None
+
     # use_normalization = "zscore_normalize"
 
     def __init__(self,

@@ -19,7 +19,7 @@ import torchvision
 from torchvision import transforms
 class UnetDataset(torch.utils.data.Dataset):
     """
-    data set for UNet, image-mask pairs
+    data set for UNet, image-mask pair_param
     """
 
     def __init__(self, lmdb_filepath, nb_classes, augment=False):

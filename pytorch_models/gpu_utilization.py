@@ -8,7 +8,7 @@ import time
 
 import GPUtil
 import sys
-from numpy import unicode
+from numpy.compat import unicode
 from datetime import datetime
 
 """
