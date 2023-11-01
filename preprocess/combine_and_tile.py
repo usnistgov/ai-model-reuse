@@ -115,17 +115,6 @@ def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
     """
     Combines image sequences into stacks of dimensions (H,Ξ,X,Y) or (H,Ξ,X,Y,Z)
     """
-    if usechannels is None:
-        usechannels = ['H0', 'H1', 'H1dark']
-    else:
-        assert all(ch in ['H0', 'H1', 'H1dark'] for ch in
-                   usechannels), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark'"
-    image_dirname = os.path.basename(os.path.normpath(image_dir))
-    expt_name, sample_type, ai_expt, sample_id = parse_INFER_folder_names(image_dirname)
-    print(expt_name, sample_type, ai_expt, sample_id)
-
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
     file_array, filename_array, xis, chs = [], [], [], []
     ext = None
     filenames = [f for f in os.listdir(image_dir) if not os.path.isdir(f) if f.__contains__(".tif")]
@@ -135,10 +124,29 @@ def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
         filename_array.append(filename)
         _, _, _, xi, ch, ext = parse_INFER_file_name(filename)
         xis.append(xi), chs.append(ch)
+    xiss = sorted(list(set(xis)))
+    chss = sorted(list(set(chs)))
+
+    if usechannels is None:
+        usechannels = ['H0', 'H1', 'H1dark']
+    else:
+        usechannels = [str(s) for s in usechannels]
+        usechannels = [s.replace('Hdark','H1dark') for s in usechannels]
+
+        assert all(ch in chss for ch in usechannels), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark', currently{usechannels}"
+
+
+    image_dirname = os.path.basename(os.path.normpath(image_dir))
+    expt_name, sample_type, ai_expt, sample_id = parse_INFER_folder_names(image_dirname)
+    print(expt_name, sample_type, ai_expt, sample_id)
+
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
     # image_stack combines all images (all xi and channels) into a single stack
     image_stack = return_images_from_paths(file_array)
     # print("image_stack", image_stack.dtype)
-    assert all(ch in chs for ch in usechannels), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark'"
+    assert all(ch in chs for ch in usechannels), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark', currently{usechannels}"
     nxis, nchs = list(np.unique(xis)), list(np.unique(usechannels))  # sorted values
     # TODO: Update for 3D: example for 3d the value will be -3
     selected_stack = np.zeros((len(nxis), len(nchs)) + image_stack.shape[-2:], dtype=image_stack.dtype)
@@ -184,7 +192,7 @@ def main():
     parser.add_argument('--xPieces', type=int, help='number of image cuts along x-axis')
     parser.add_argument('--yPieces', type=int, help='number of image cuts along y-axis')
     args, unknown = parser.parse_known_args()
-
+    print("CHANNELS\t",args.channels)
     if args.image_dir is None:
         print('ERROR: missing input image dir ')
         return

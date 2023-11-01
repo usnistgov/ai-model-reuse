@@ -193,7 +193,7 @@ class GetDataloader:
             x: DataLoader(image_datasets[x],
                           batch_size=batch_size,
                           shuffle=False,
-                          num_workers=8, drop_last=True)
+                          num_workers=8, drop_last=False)
             for x in ['Train', 'Test']
         }
         self.dataloaders = dataloaders

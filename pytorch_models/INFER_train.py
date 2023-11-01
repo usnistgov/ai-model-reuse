@@ -5,8 +5,8 @@ from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from torchvision.models.segmentation.fcn import FCNHead
 from torchvision.models.segmentation.lraspp import LRASPPHead
 from torchvision.models.mobilenetv3 import MobileNetV3, _mobilenet_v3_conf
-from INFER_input_model import *
 from torchvision import models
+from INFER_input_model import *
 import csv
 import os
 import time
@@ -223,11 +223,6 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
 
             inputs = sample['image'].to(device)
             masks = sample['mask'].to(device)
-
-            # print('\nINPUTS1:', inputs)
-            # print('\nMASKS1:', masks)
-            # print('\n')
-
             optimizer.zero_grad()
             with torch.set_grad_enabled(True):
                 if device_name == 'cpu':
@@ -381,7 +376,7 @@ def main():
     parser.add_argument('--model_name', type=str)
     parser.add_argument('--pretrained')
     parser.add_argument('--classes', type=int)
-
+    parser.add_argument('--inputchannels', type=int)
     args, unknown = parser.parse_known_args()
 
     if args.data is None:
@@ -471,7 +466,7 @@ def main():
     # TODO: also dynamically choose input_channels
     # Calls function to create the deeplabv3 model from torchvision.
     model = initializeModel(output_channels=args.classes, pretrained=toBool, name=args.model_name,
-                            input_channels=168, bs=args.batch_size)
+                            input_channels=args.inputchannels, bs=args.batch_size)
     if args.device_name == 'cpu':
         output_dir = args.output_dir
     else:

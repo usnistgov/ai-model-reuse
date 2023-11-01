@@ -1,10 +1,12 @@
+import itertools
+import os
+from itertools import combinations
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+import pandas as pd
 import seaborn as sns
 from statannotations.Annotator import Annotator
-from itertools import combinations
-import pandas as pd
+from scipy.stats import mannwhitneyu
 
 """
 1. should boxplots change for log scale? - no
@@ -22,7 +24,7 @@ import pandas as pd
     -> Compare best model in each category?
 
 48 best epochs for 48 models.
-For 4 set<harmonics> = 12 values of 1. Losses, 2. 
+For 4 set<modes> = 12 values of 1. Losses, 2. 
 
 """
 
@@ -35,7 +37,7 @@ def get_best_model_df(df, metric=None, groupby=None):
     if metric is None:
         metric = "crossentropy"
     if metric in ["CE", "crossentropy"]:
-        df['optimal_metric'] = np.sqrt(df['Train_loss'] ** 2 + df['Test_loss'] ** 2)
+        df['optimal_metric'] = np.sqrt(df['Train loss'] ** 2 + df['Test_loss'] ** 2)
         optimal_product = df.groupby(groupby)['optimal_metric'].idxmin()  # .reset_index()
     elif metric == "Dice":
         df['optimal_metric'] = df["Dice"]
@@ -48,10 +50,20 @@ def get_best_model_df(df, metric=None, groupby=None):
     return best_df_ch
 
 
-def do_stat_annotations(df, ax, pair_param, x=None, y=None, order=None):
+def do_stat_annotations(df, ax, pair_param, x=None, y=None, order=None, pair_types="unique"):
+    """
+    :param df
+    :param ax
+    :param pair_param
+    :param x
+    :param y
+    :param order
+    :param pair_types: Select one from "unique, "adjacent"
+
+    """
     try:
         pairs = None
-        if pair_param == "channel":
+        if pair_param == 'channel':
             pair_param_uniques = list(df.channel.unique())
         if pair_param == "pretrained":
             pair_param_uniques = list(df.pretrained.unique())
@@ -62,10 +74,23 @@ def do_stat_annotations(df, ax, pair_param, x=None, y=None, order=None):
         pairs = list(set(tuple(sorted(all_pair)) for all_pair in all_pairs))
         print("ANNO\n", df[df.isna().any(axis=1)], "\n", df.dtypes)
         annotator = Annotator(ax, pairs, data=df, x=x, y=y, order=order)
-        annotator.configure(test='Mann-Whitney', text_format='star', loc='outside',line_height=0.01, text_offset=1)
+        # for pair in pairs:
+        #     g1, g2 = p
+        print(pairs)
+        print(pairs[0])
+        print(pairs[0][1], type(pairs[0][1]))
+        print(ax.collections[0].get_array())
+        # print(df[df[pair_param] == pairs[0][1]])
+        exit()
+        annotator.configure(test='Mann-Whitney', text_format='star', loc='outside', line_height=0.005, text_offset=0,
+                            fontsize=12)
         # annotator.configure(test='t-test_ind', text_format='star', loc='outside', line_height=0.01, text_offset=1)
         # annotator.configure(test='t-test_ind', text_format='star', loc='outside')
-        annotator.apply_and_annotate()
+        # annotator.apply_and_annotate()
+        annotator.apply_test()
+        # print(annotator.annotations[0])
+        # exit()
+        annotator.annotate()
         # annotator.apply_test(nan_policy='propagate')
         # annotator.annotate()
     except Exception as e:
@@ -73,39 +98,41 @@ def do_stat_annotations(df, ax, pair_param, x=None, y=None, order=None):
     return ax
 
 
-def plot_metrics_comparison(df, savepath, comparemetrics=None, tr_thresh=100, tst_thresh=100, illustrate_thresh=True):
+def plot_metrics_comparison(df, savepath, comparemetrics=None, tr_thresh=100, tst_thresh=100, illustrate_thresh=True,
+                            draw_lines=True):
     if comparemetrics is None:
-        comparemetrics = ['Train_loss', 'Test_loss']
+        comparemetrics = ['Train loss', 'Test_loss']
     fig = plt.figure(1)
     metric1, metric2 = comparemetrics
     # tr_thresh = 100
     # tst_thresh = 100
-    df = df[df['Train_loss'] <= tr_thresh]
+    df = df[df['Train loss'] <= tr_thresh]
     df = df[df['Test_loss'] <= tst_thresh]
-    if metric1 in ['Train_loss', 'Test_loss']:
-        if metric2 in ['Train_loss', 'Test_loss']:
-            if illustrate_thresh == True:
-                x = [1, 2, 3, 4, 5]
-                y = [1, 2, 3, 4, 5]
-                plt.vlines(x, 0, y, linestyle="solid")
-                plt.hlines(y, 0, x, linestyle="solid")
+    if draw_lines:
+        if metric1 in ['Train loss', 'Test_loss']:
+            if metric2 in ['Train loss', 'Test_loss']:
+                if illustrate_thresh == True:
+                    x = [1, 2, 3, 4, 5]
+                    y = [1, 2, 3, 4, 5]
+                    plt.vlines(x, 0, y, linestyle="solid")
+                    plt.hlines(y, 0, x, linestyle="solid")
     sns.scatterplot(df, x=metric1, y=metric2, s=5, alpha=0.95, hue=df['channel'],
-                    palette='Spectral') # label=f'{metric1}_vs_{metric2}'
+                    palette='Spectral')  # label=f'{metric1}_vs_{metric2}'
     # plt.scatter(dataF['Train_loss'][0:], dataF['Test_loss'][0:], c='blue', s=5, label='loss comparison', hue=dataF['epoch'])
     plt.legend(bbox_to_anchor=(1.02, 1.02), loc="upper left")
     title_test = f"{metric1} vs {metric2}"
-    plt.title(title_test)
-    plt.xlabel(metric1)
-    plt.ylabel(metric2)
+    plt.title(title_test, fontsize=20)
+    plt.xlabel(metric1, fontsize=16)
+    plt.ylabel(metric2, fontsize=16)
     outGraph_test = savepath + os.path.sep + f'{metric1}_vs_{metric2}_thresh{tr_thresh}-{tst_thresh}_comparison.png'
     plt.savefig(outGraph_test, bbox_inches='tight')
     plt.clf()
     plt.close()
 
 
-def get_stability(df, use_best=False, metric="CE"):
+def get_stability(df, use_best=False, metric="CE", annotate_best_points=False, annotate_stability_stats=False):
     """
-    Stability of a model is calculated  based on change of train and test loss over the entire model.
+    Stability of a model is calculated  based on change of train and Test_loss over the entire model.
 
     :param df: dataframe containing all data
     :param use_best: present stability for the best models
@@ -129,9 +156,9 @@ def get_stability(df, use_best=False, metric="CE"):
                 df_ch_lr_pt = df_ch_lr[df_ch_lr['pretrained'] == pt]
                 # find slope of training and test curves
                 mintestloss = df_ch_lr_pt['Test_loss'].min()
-                mintrainloss = df_ch_lr_pt['Train_loss'].min()
+                mintrainloss = df_ch_lr_pt['Train loss'].min()
                 # df_testvals= df_ch_lr_pt[['epoch','Test_loss']].to_numpy()
-                df_trainvals, df_testvals = df_ch_lr_pt['Train_loss'].to_numpy(), df_ch_lr_pt['Test_loss'].to_numpy()
+                df_trainvals, df_testvals = df_ch_lr_pt['Train loss'].to_numpy(), df_ch_lr_pt['Test_loss'].to_numpy()
                 df_testvals = df_testvals - mintestloss
                 df_trainvals = df_trainvals - mintrainloss
                 A = np.vstack([df_trainvals, np.ones(len(df_trainvals))]).T
@@ -143,6 +170,7 @@ def get_stability(df, use_best=False, metric="CE"):
     ######################################################################################
     qvals = [channels, lrs, pts]
     quants = ['channel', 'lr', 'pretrained']
+    quantlabel = ['set of image modes', 'learning rates', 'pretrained']
     i = 0
 
     props = {
@@ -171,9 +199,9 @@ def get_stability(df, use_best=False, metric="CE"):
                 # , alpha = 0.5
                 plt.xticks(range(len(qvals[quants.index(quant)])), labels=qvals[quants.index(quant)])
                 title_test = f"Residual wrt {quant}"
-                # plt.title(title_test)
-                plt.xlabel(quant)
-                plt.ylabel('Residual')
+                # plt.title(title_test, fontsize=20)
+                plt.xlabel(quantlabel[quants.index(quant)], fontsize=16)
+                plt.ylabel('Residual', fontsize=16)
                 outGraph_test = savepath + os.path.sep + f'Model_stability_{quant}_compare{hue}.png'
                 plt.savefig(outGraph_test, bbox_inches='tight')
                 plt.clf()
@@ -198,29 +226,32 @@ def get_stability(df, use_best=False, metric="CE"):
         sns.stripplot(residual_arr_df, x=quant, y="residual", color="black", dodge=5, size=3,
                       linewidth=0, legend=False)
         residual_arr_df_na = residual_arr_df.dropna()
-        do_stat_annotations(df=residual_arr_df_na, ax=plt.gca(), pair_param=quant, x=quant, y="residual", order=None)
+
+        if annotate_stability_stats:
+            do_stat_annotations(df=residual_arr_df_na, ax=plt.gca(), pair_param=quant, x=quant, y="residual",
+                                order=None)
 
         # print("HIHI")
         if use_best:
             best_df_quant = get_best_model_df(df, groupby=[quant], metric=metric)
             columns_to_match = quants
             residual_arr_best = pd.merge(residual_arr_df, best_df_quant, on=columns_to_match, suffixes=('', '_best'))
-            # print(residual_arr_best)
-            # print(residual_arr_df.index[best_df_quant.index])
             sns.stripplot(residual_arr_best, x=quant, y="residual", color="red", dodge=5, size=5, linewidth=0,
                           legend=False)
             for id, row in residual_arr_best.iterrows():
-                # print(f"{row['channel']},\n{row['lr']}\n{row['pretrained']}", (row[quant], (row['optimal_metric'])))
                 # Show optimal metric instead of residual
-                plt.gca().annotate(f"{row['optimal_metric']:.4e}\n{row['channel']},\n{row['lr']}\n{row['pretrained']}",
-                                   (str(row[quant]), (row['residual'])), xytext=(20, -5), textcoords='offset points',
-                                   family='sans-serif', fontsize=8, color='darkslategrey')
+                if annotate_best_points:
+                    plt.gca().annotate(
+                        f"{row['optimal_metric']:.4e}\n{row['channel']},\n{row['lr']}\n{row['pretrained']}",
+                        (str(row[quant]), (row['residual'])), xytext=(20, -5),
+                        textcoords='offset points',
+                        family='sans-serif', fontsize=8, color='darkslategrey')
 
         plt.xticks(range(len(qvals[quants.index(quant)])), labels=qvals[quants.index(quant)])
-        title_test = f"Residual wrt {quant}"
-        # plt.title(title_test)
-        plt.xlabel(quant)
-        plt.ylabel('Residual')
+        # title_test = f"Residual wrt {quant}"
+        # plt.title(title_test, fontsize=20)
+        plt.xlabel(quantlabel[quants.index(quant)], fontsize=16)
+        plt.ylabel('Residual', fontsize=16)
         outGraph_test = savepath + os.path.sep + f'Model_stability_{quant}_{metric}.png'
         plt.savefig(outGraph_test, bbox_inches='tight')
         plt.clf()
@@ -228,7 +259,7 @@ def get_stability(df, use_best=False, metric="CE"):
         i += 1
 
 
-def visualize_best_models(df, metric="CE"):
+def visualize_best_models(df, metric="CE", annotate_stats=False, annotate_best_points=False):
     """
         chooses best model based on RMS CrossEntropy metric
         selected for each training type
@@ -241,18 +272,12 @@ def visualize_best_models(df, metric="CE"):
     pts = list(df.pretrained.unique())
     qvaltype = [channels, lrs, pts]
     quants = ['channel', 'lr', 'pretrained']
+    quantlabel = ['set of image modes', 'learning rates', 'pretrained']
+
     i = 0
     best_df_all = get_best_model_df(df, groupby=quants, metric=metric)
     for qvals, quant in zip(qvaltype, quants):
-        # print(quant, qvals)
         best_df_quant = get_best_model_df(df, groupby=[quant], metric=metric)
-        # print(f"bestdf: {quant}", best_df_quant)
-        # for qval in qvals:
-        # df_quant = df[df[quant] == qval]
-        # best_df = get_best_model_df(df_quant, metric=metric)
-        # description_best = f"\n{quant}: {best_df_ch[quant][best_id_ch]}, {best_df_ch['instrument'][best_id_ch]}, {best_df_ch['sampletype'][best_id_ch]} pretrained {best_df_ch['pretrained'][best_id_ch]}@lr{best_df_ch['lr'][best_id_ch]}. Best epoch = {best_df_ch['epoch'][best_id_ch]} "
-        # description_best += f"\nmin CE loss= {minloss}, Dice: {best_df_ch['Dice'][best_id_ch]}, F-1 score: {best_df_ch['F1-Score'][best_id_ch]}"
-        # print(description_best)
         fig = plt.figure(i)
         if metric in ["CE", "crossentropy"]:
             plt.yscale('log')
@@ -262,20 +287,21 @@ def visualize_best_models(df, metric="CE"):
                       linewidth=0, legend=False)
         sns.stripplot(data=best_df_quant, x=quant, y='optimal_metric', color="red", dodge=5, size=5,
                       linewidth=0, legend=False)
-        do_stat_annotations(df=best_df_all, ax=plt.gca(), pair_param=quant, x=quant, y="optimal_metric", order=None)
-        # for (q, v) in zip(best_df_quant[quant], best_df_quant['optimal_metric']):
+        anotstring = ""
+        if annotate_stats:
+            do_stat_annotations(df=best_df_all, ax=plt.gca(), pair_param=quant, x=quant, y="optimal_metric", order=None)
+            anotstring = "_wstat"
         for id, row in best_df_quant.iterrows():
-            # print( f"{metric}: {row['channel']},\t{row['lr']}\t{row['pretrained']}, \t{(row[quant], (row['optimal_metric']))}")
-            plt.gca().annotate(f"{row['optimal_metric']:.4f}\n{row['channel']},\n{row['lr']}\n{row['pretrained']}",
-                               (str(row[quant]), (row['optimal_metric'])), xytext=(20, -5), textcoords='offset points',
-                               family='sans-serif', fontsize=8, color='darkslategrey')
-        # , alpha = 0.5
-        # plt.xticks(range(len(qvals[quants.index(quant)])), labels=qvals[quants.index(quant)])
-        title_test = f"Best models {quant}"
-        # plt.title(title_test)
-        plt.xlabel(quant)
-        plt.ylabel(f'{metric}')
-        outGraph_test = savepath + os.path.sep + f'Best_model_{quant}_{metric}.png'
+            if annotate_best_points:
+                plt.gca().annotate(f"{row['optimal_metric']:.4f}\n{row['channel']},\n{row['lr']}\n{row['pretrained']}",
+                                   (str(row[quant]), (row['optimal_metric'])), xytext=(20, -5),
+                                   textcoords='offset points',
+                                   family='sans-serif', fontsize=8, color='darkslategrey')
+        # title_test = f"Best models {quant}"
+        # plt.title(title_test, fontsize=20)
+        plt.xlabel(quantlabel[quants.index(quant)], fontsize=16)
+        plt.ylabel(f'{metric}', fontsize=16)
+        outGraph_test = savepath + os.path.sep + f'Best_model_{quant}_{metric}{anotstring}.png'
         plt.savefig(outGraph_test, bbox_inches='tight')
         plt.clf()
         plt.close()
@@ -291,6 +317,7 @@ def model_speed(df, use_best=True, metric="CE"):
 
     """
     channels = list(df.channel.unique())
+    markers = ['.', 'v', '^', 'o', 's', "D", "P"]
     # print(channels, type(channels))
     thresholds = [5, 4, 3, 2, 1]
     # print(lims, type(lims))
@@ -303,22 +330,25 @@ def model_speed(df, use_best=True, metric="CE"):
         df_ch = None
         for lim in thresholds:
             df_ch = df[df['channel'] == channel]
-            df_ch = df_ch[df_ch['Train_loss'] <= lim]
+            df_ch = df_ch[df_ch['Train loss'] <= lim]
             df_ch = df_ch[df_ch['Test_loss'] <= lim]
 
             channel_model_speed[channels.index(channel), thresholds.index(lim)] = len(df_ch.index)
             # print(channel, lim, len(df_ch.index))
     fig = plt.figure(1)
-    plt.plot(channel_model_speed.T)
+    print(channel_model_speed.shape)
+    for rc, rowc in enumerate(channel_model_speed):
+        plt.plot(rowc, marker=markers[rc])
+
     plt.gca().invert_xaxis()
 
     plt.legend(channels, bbox_to_anchor=(1.02, 1.02), loc="upper left")
     title_test = f"Model speed: values below threshold (higher is better)"
-    # plt.title(title_test)
+    # plt.title(title_test, fontsize=20)
     plt.xticks([0, 1, 2, 3, 4], labels=thresholds)
     plt.yticks([0, 200, 400, 600, 800, 1000, 1200], labels=[0, 200, 400, 600, 800, 1000, 1200])
-    plt.xlabel('Threshold')
-    plt.ylabel('Epochs with values below threshold')
+    plt.xlabel('Threshold', fontsize=16)
+    plt.ylabel('# Epoch values < threshold', fontsize=16)
     outGraph_test = savepath + os.path.sep + f'Model_convergence_speed_ch_{metric}{"_best" if use_best else ""}.png'
     plt.savefig(outGraph_test, bbox_inches='tight')
     plt.clf()
@@ -333,19 +363,21 @@ def model_speed(df, use_best=True, metric="CE"):
         df_lr = None
         for lim in thresholds:
             df_lr = df[df['lr'] == lr]
-            df_lr = df_lr[df_lr['Train_loss'] <= lim]
+            df_lr = df_lr[df_lr['Train loss'] <= lim]
             df_lr = df_lr[df_lr['Test_loss'] <= lim]
             lr_model_speed[lrs.index(lr), thresholds.index(lim)] = len(df_lr.index)
     fig = plt.figure(2)
-    plt.plot(lr_model_speed.T)
+    for rl, rowl in enumerate(lr_model_speed):
+        plt.plot(rowl, marker=markers[rl])
+    plt.plot()
     plt.gca().invert_xaxis()
     plt.legend(lrs, bbox_to_anchor=(1.02, 1.02), loc="upper left")
     title_test = f"Model speed: values below threshold (higher is better)"
-    # plt.title(title_test)
+    # plt.title(title_test, fontsize=20)
     plt.xticks([0, 1, 2, 3, 4], labels=thresholds)
     plt.yticks([0, 200, 400, 600, 800, 1000, 1200], labels=[0, 200, 400, 600, 800, 1000, 1200])
-    plt.xlabel('Threshold')
-    plt.ylabel('Epochs with values below threshold')
+    plt.xlabel('Threshold', fontsize=16)
+    plt.ylabel('# Epoch values < threshold', fontsize=16)
     outGraph_test = savepath + os.path.sep + f'Model_convergence_speed_LR_{metric}{"_best" if use_best else ""}.png'
     plt.savefig(outGraph_test, bbox_inches='tight')
     plt.clf()
@@ -360,21 +392,24 @@ def model_speed(df, use_best=True, metric="CE"):
         df_pt = None
         for lim in thresholds:
             df_pt = df[df['pretrained'] == pt]
-            df_pt = df_pt[df_pt['Train_loss'] <= lim]
+            df_pt = df_pt[df_pt['Train loss'] <= lim]
             df_pt = df_pt[df_pt['Test_loss'] <= lim]
             pt_model_speed[pts.index(pt), thresholds.index(lim)] = len(df_pt.index)
     fig = plt.figure(3)
-    plt.plot(pt_model_speed.T)
+    # plt.plot(pt_model_speed.T)
+    for rp, rowp in enumerate(pt_model_speed):
+        plt.plot(rowp, marker=markers[rp])
+
     plt.gca().invert_xaxis()
 
     plt.legend(pts, bbox_to_anchor=(1.02, 1.02), loc="upper left")
     title_test = f"Model speed: values below threshold (higher is better)"
-    # plt.title(title_test)
+    # plt.title(title_test, fontsize=20)
     plt.xticks([0, 1, 2, 3, 4], labels=thresholds)
     plt.yticks([0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000],
                labels=[0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000])
-    plt.xlabel('Threshold')
-    plt.ylabel('Pretrained with values below threshold')
+    plt.xlabel('Threshold', fontsize=16)
+    plt.ylabel('Pretrained with values below threshold', fontsize=16)
     outGraph_test = savepath + os.path.sep + f'Model_convergence_speed_Pretrained_{metric}{"_best" if use_best else ""}.png'
     plt.savefig(outGraph_test, bbox_inches='tight')
     plt.clf()
@@ -383,23 +418,36 @@ def model_speed(df, use_best=True, metric="CE"):
 
 
 if __name__ == "__main__":
-    # eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels/infer_tile_images.csv"
-    # eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels/inference_Measured.csv"
-    # training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels/training.csv"
-    # savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels"
-    eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/infer_tile_images.csv"
-    eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/inference_Measured.csv"
-    training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/training.csv"
-    savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain"
+    eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/infer_tile_images.csv"
+    eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/inference_Measured.csv"
+    training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/training.csv"
+    savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/figupdates_final"
+    # eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/infer_tile_images.csv"
+    # eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/inference_Measured.csv"
+    # training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/training.csv"
+    # savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/figupdates"
     dataF = pd.read_csv(training_data)
-    allmetrics = ['Train_loss', 'Test_loss', 'precision', 'recall', 'accuracy', 'F1-Score', 'Dice', 'Jaccard',
+    allmetrics = ['Train loss', 'Test_loss', 'precision', 'recall', 'accuracy', 'F1-Score', 'Dice', 'Jaccard',
                   'MSE']
     ##################################################################
     calcmetrics = True
+    try:
+        dataF = dataF.replace('H0', '{H0}')
+        dataF = dataF.replace('Hdark', '{DF}')
+        dataF = dataF.replace('H0H1', '{H0,H1}')
+        dataF = dataF.replace('H0Hdark', '{H0,DF}')
+        dataF = dataF.rename(columns={'Train_loss': 'Train loss', 'Test_loss': 'Test_loss'})
+    except Exception as renameerr:
+        print(renameerr)
+        exit()
+    # print(dataF.channel)
+    # exit()
     if calcmetrics:
-        get_stability(dataF, use_best=True, metric="crossentropy")
+        get_stability(dataF, use_best=True, metric="crossentropy", annotate_best_points=False,
+                      annotate_stability_stats=True)
         for met in ['Dice', 'crossentropy']:
-            visualize_best_models(dataF, metric=met)
+            for ans in [True, False]:
+                visualize_best_models(dataF, metric=met, annotate_best_points=False, annotate_stats=ans)
             # for usebest in [True]:
             model_speed(dataF, use_best=True, metric=met)
     ##################################################################
@@ -409,4 +457,5 @@ if __name__ == "__main__":
         for i in allmetrics:
             for j in allmetrics:
                 if i != j:
-                    plot_metrics_comparison(dataF, savepath=savepath, comparemetrics=[i, j], tr_thresh=5, tst_thresh=5)
+                    plot_metrics_comparison(dataF, savepath=savepath, comparemetrics=[i, j], tr_thresh=5,
+                                            tst_thresh=100, draw_lines=False)

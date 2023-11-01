@@ -37,3 +37,12 @@ if [ ! -d ${root_folder}"/"${ch} ]; then
 python combine_and_tile.py --image_dir=${root_folder}"/"${image_input_folder} --output_dir=${root_folder}"/"${ch}"/tiled_images" --channels $channels --xPieces=${xPieces} --yPieces=${yPieces}
 python tiling.py --image_dir=${root_folder}"/"${mask_input_folder} --output_dir=${root_folder}"/"${ch}"/tiled_masks" --xPieces=${xPieces} --yPieces=${yPieces}
 python split.py --image_dir=${root_folder}"/"${ch}"/tiled_images" --mask_dir=${root_folder}"/"${ch}"/tiled_masks" --train_image_dir=${root_folder}"/"${ch}"/train_images" --train_mask_dir=${root_folder}"/"${ch}"/train_masks" --test_image_dir=${root_folder}"/"${ch}"/test_images" --test_mask_dir=${root_folder}"/"${ch}"/test_masks" --fraction 0.8
+
+
+# Copy all test to train for measured data
+path_tstimg=${root_folder}'/'${ch}'/test_images/'
+path_trnimg=${root_folder}'/'${ch}'/train_images/'
+path_tstmsk=${root_folder}'/'${ch}'/test_masks/'
+path_trnmsk=${root_folder}'/'${ch}'/train_masks/'
+cp -r ${path_tstimg}/. ${path_trnimg}
+cp -r ${path_tstmsk}/. ${path_trnmsk}

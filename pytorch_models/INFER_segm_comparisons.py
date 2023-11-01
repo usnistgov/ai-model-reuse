@@ -10,7 +10,9 @@ import time
 import skimage.io
 import skimage
 import numpy as np
-from sklearn.metrics import f1_score, mean_squared_error, jaccard_score
+from sklearn.metrics import f1_score, mean_squared_error, jaccard_score, adjusted_rand_score, pair_confusion_matrix, \
+    multilabel_confusion_matrix
+from sklearn.metrics import _classification
 
 # TODO: replace precision,recall,f1?
 '''
@@ -40,6 +42,7 @@ def compare_batch(pred_mask_dirpath, gt_mask_dirpath, gt_mask_numclasses, output
     avg_recall_score = 0.0
     avg_accuracy_score = 0.0
     avg_f1_score = 0.0
+    avg_adjusted_rand = 0.0
     for i in range(len(file_array)):
         image_basename = os.path.basename(file_array[i])
         if doNamesMatch:
@@ -73,14 +76,15 @@ def compare_batch(pred_mask_dirpath, gt_mask_dirpath, gt_mask_numclasses, output
         if pred_mask.shape[0] != gt_mask.shape[0] or pred_mask.shape[1] != gt_mask.shape[1]:
             print('ERROR: sanity check - prediction and gt masks do not have the same dimensions')
             continue
-
-        precision_score, recall_score, accuracy_score, f1_score = metrics_masks(mask_file_array[match_index], pred_mask,
-                                                                                gt_mask, gt_mask_numclasses, output_dir)
+        precision_score, recall_score, accuracy_score, f1_score, jaccard_coeff, dice_coeff, mse_coeff, labelwise_dice, adjrand \
+            = metrics_masks(mask_file_array[match_index], pred_mask, gt_mask, gt_mask_numclasses, output_dir)
         avg_precision_score += precision_score
         avg_recall_score += recall_score
         avg_accuracy_score += accuracy_score
         avg_f1_score += f1_score
+        avg_adjusted_rand += adjrand
         ##########################
+    ##########################
 
     if len(file_array) > 0:
         avg_precision_score /= len(file_array)
@@ -105,6 +109,7 @@ def compare_batch(pred_mask_dirpath, gt_mask_dirpath, gt_mask_numclasses, output
     batchsummary['Recall'] = avg_recall_score
     batchsummary['Accuracy'] = avg_accuracy_score
     batchsummary['F1-Score'] = avg_f1_score
+    batchsummary["Adjusted Rand"] = avg_adjusted_rand
     exec_time = time.time() - start_time
     exec_time = int(exec_time)
     batchsummary['Exec_time [seconds]'] = exec_time
@@ -167,21 +172,123 @@ def metrics_masks(gt_file_name, pred_mask, gt_mask, num_classes, output_dir):
         accuracy_score = 0.0
     seconds = time.time() - start_time
     seconds = int(seconds)
-    # print()
-    # print(f"1: {np.unique(gt_mask).tolist()}, {np.unique(pred_mask).tolist()}")
-    # print(f"2: {np.unique(gt_mask).tolist() + np.unique(pred_mask).tolist()}")
-    # print(f"3: {set(np.unique(gt_mask).tolist() + np.unique(pred_mask).tolist())}")
-    # print(f"4: {list(set(np.unique(gt_mask).tolist() + np.unique(pred_mask).tolist()))}")
     all_labels = sorted(list(set(np.unique(gt_mask).tolist() + np.unique(pred_mask).tolist())))
     labelwise_dice = {}
     labelwise_jaccard = jaccard_score(gt_mask.flatten(), pred_mask.flatten(), labels=all_labels, average=None)
     for l, label in enumerate(all_labels):
-        labelwise_dice[f'{label}'] = 2 * labelwise_jaccard[l] / (labelwise_jaccard[l] + 1)
+        labelwise_dice[f'{label}'] = (2 * labelwise_jaccard[l]) / (labelwise_jaccard[l] + 1)
 
     jaccard_coeff = jaccard_score(gt_mask.flatten(), pred_mask.flatten(), average='micro')
+    # TODO: Adjusted Rand Index
+    adjrand = adjusted_rand_score(labels_true=gt_mask.flatten(), labels_pred=pred_mask.flatten())
     dice_coeff = (2 * jaccard_coeff) / (jaccard_coeff + 1)
     mse_coeff = mean_squared_error(gt_mask.flatten(), pred_mask.flatten())
-    return precision_score, recall_score, accuracy_score, f1_score, jaccard_coeff, dice_coeff, mse_coeff, labelwise_dice
+    return precision_score, recall_score, accuracy_score, f1_score, jaccard_coeff, dice_coeff, mse_coeff, labelwise_dice, adjrand
+
+
+def get_pair_confusion_matrix(labels_true, labels_pred):
+    CM = pair_confusion_matrix(labels_true, labels_pred)
+    CM = CM.astype(np.uint16)
+    # tn, fp, fn, tp = get_tfpn(CM)
+    return CM
+
+
+def get_multilabel_confusion_matrix(labels_true, labels_pred, labelslist):
+    MCM = multilabel_confusion_matrix(labels_true, labels_pred, labels=labelslist)
+    return MCM
+
+
+def get_tfpn(MCM):
+    if MCM.ndim == 3:
+        tp = MCM[:, 1, 1]
+        tn = MCM[:, 0, 0]
+        fp = MCM[:, 0, 1]
+        fn = MCM[:, 1, 0]
+    elif MCM.ndim == 2:
+        tp = MCM[1, 1]
+        tn = MCM[0, 0]
+        fp = MCM[0, 1]
+        fn = MCM[1, 0]
+    else:
+        raise ValueError(f"Multilabel confusion matrix must be 3 dimensional, currently f{MCM.ndim}")
+    return tn, fp, fn, tp
+
+
+def classification_divide(numerator, denominator, metric, modifier, average, warn_for, zero_division="warn"):
+    if numerator.ndim==2 and denominator.ndim==2:
+        _classification._prf_divide(numerator=numerator, denominator=denominator, metric=metric, modifier=modifier,
+                                average=average, warn_for=warn_for, zero_division=zero_division)
+
+
+def cumulative_multilabel_jaccard(MCM):
+    tn, fp, fn, tp = get_tfpn(MCM)
+    numerator = tp
+    denominator = tp + fp + fn
+    jaccard = _classification._prf_divide(numerator, denominator, "jaccard", "true or predicted", warn_for=("jaccard",))
+    return jaccard
+
+
+def cumulative_multilabel_dice(MCM):
+    tn, fp, fn, tp = get_tfpn(MCM)
+    numerator = 2 * tp
+    denominator = 2 * tp + fp + fn
+    dice = _classification._prf_divide(numerator, denominator, "Dice", "true or predicted", average=None,
+                                       warn_for=("Dice",))
+    return dice
+
+
+def cumulative_multilabel_aprf(MCM):
+    tn, fp, fn, tp = get_tfpn(MCM)
+    numacc = tp + tn
+    denacc = tp + tn + fp + fn
+    accuracy = _classification._prf_divide(numacc, denacc, "Accuracy", "true or predicted", average=None,
+                                           warn_for=("Accuracy",))
+    numprec = tp
+    denprec = tp + fp
+    precision = _classification._prf_divide(numprec, denprec, "Precision", "true or predicted", average=None,
+                                            warn_for=("Precision",))
+    numrec = tp
+    denrec = tp + fn
+    recall = _classification._prf_divide(numrec, denrec, "Recall", "true or predicted", average=None,
+                                         warn_for=("Recall",))
+    numf1 = 2 * precision * recall
+    denf1 = precision + recall
+    f1 = _classification._prf_divide(numf1, denf1, "F-1 Score", "true or predicted", average=None,
+                                     warn_for=("F-1 Score",))
+    return accuracy, precision, recall, f1
+
+
+def cumulative_adjusted_rand(MCM):
+    tn, fp, fn, tp = get_tfpn(MCM)
+    numerator = (2.0 * (tp * tn - fn * fp))
+    denominator = ((tp + fn) * (fn + tn) + (tp + fp) * (fp + tn))
+    dice = _classification._prf_divide(numerator, denominator, "Rand", "true or predicted", average=None,
+                                       warn_for=("Rand",))
+    return dice
+
+
+def getMCMfromDict(labelwiseMCM):
+    # It is assumed that the keys are of
+    keys, values = list(labelwiseMCM.keys()), list(labelwiseMCM.values())
+    keys = [int(k) for k in keys]
+    labelwiseMCM = dict(sorted(labelwiseMCM.items(), key=lambda item: int(item[0])))  # .values()
+    # print("LBLMCMVAL", labelwiseMCM.values())
+    MCM = np.stack(list(labelwiseMCM.values()))
+    return MCM, keys
+
+
+def combine_multilabel_confusion_matrices(MCM_new, all_labels, labelwise_MCM=None):
+    # Ensure that this function and get_multilabel_confusion_matrix() have the same value in all labels
+    if labelwise_MCM is None:
+        labelwise_MCM = {}
+    else:
+        assert isinstance(labelwise_MCM, dict), f"labelwise_MCM must be a dict, currently {type(labelwise_MCM)} "
+    # MCM_count = {}
+    for l, label in enumerate(all_labels):
+        if label not in list(labelwise_MCM.keys()):
+            labelwise_MCM[label] = 0.0
+        labelwise_MCM[label] += MCM_new[l]
+    return labelwise_MCM
 
 
 def confusion_matrix(predictions, masks, classes):

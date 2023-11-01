@@ -84,7 +84,7 @@ class INFERDefaultModel(torch.nn.Module):
     A simple 2 layer fcn to be used as a default fallback model when no standard model is provided.
     """
 
-    def __init__(self, window_size, output_channels, batch=80):
+    def __init__(self, window_size, output_channels):
         super(INFERDefaultModel, self).__init__()
         self.window_size = window_size
         self.output_channels = output_channels

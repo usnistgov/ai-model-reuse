@@ -124,8 +124,169 @@ run inference and compute the accuracy against the ground truth mask
 '''
 
 
-def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classes, output_dir):
+# def inference_withmask_averaged(model_filepath, image_filepath, mask_filepath, num_classes, output_dir):
+#     start_time = time.time()
+#     model = torch.load(model_filepath)
+#     model.eval()
+#     file_array = []
+#     for filename in os.listdir(image_filepath):
+#         filepath = os.path.join(image_filepath, filename)
+#         file_array.append(filepath)
+#
+#     mask_file_array = []
+#     for mfilename in os.listdir(mask_filepath):
+#         mfilepath = os.path.join(mask_filepath, mfilename)
+#         mask_file_array.append(mfilepath)
+#
+#     avg_precision_score = 0.0
+#     avg_adjusted_rand = 0.0
+#     avg_recall_score = 0.0
+#     avg_accuracy_score = 0.0
+#     avg_f1_score = 0.0
+#     avg_dice = 0.0
+#     avg_jaccard = 0.0
+#     avg_mse = 0.0
+#     average_label_dice = {}  # empty dictionary for all labels
+#     labelwisedice_nvals = {}  # empty dictionary for all labels
+#     pred_labels = {}  # empty dictionary for all labels
+#     all_labels = []
+#     for i in range(len(file_array)):
+#         image_basename = os.path.basename(file_array[i])
+#         found_match = False
+#         match_index = 0
+#         for j in range(len(mask_file_array)):
+#             mask_basename = os.path.basename(mask_file_array[j])
+#             if mask_basename == image_basename:
+#                 match_index = j
+#                 found_match = True
+#                 break
+#         if not found_match:
+#             print('INFO: did not find a matching mask for ', file_array[i])
+#             continue
+#
+#         # load intensity image
+#         image = skimage.io.imread(file_array[i])
+#
+#         if INFER_Dataset.INFERSegmentationDataset.use_normalization == "zscore_normalize":
+#             image = INFER_Dataset.INFERSegmentationDataset.zscore_normalize(image)
+#         else:
+#             image = image.astype(np.float32)
+#             pass
+#             # print("ignoring normalization")
+#
+#         img = torch.from_numpy(image)
+#
+#         img = torch.unsqueeze(img, 0)
+#         img = img.type(torch.cuda.FloatTensor)
+#         pred = model(img)
+#         pred = pred
+#
+#         pred = torch.squeeze(pred, 0)
+#         pred = torch.argmax(pred, 0)
+#         pred = pred.cpu().detach().numpy().astype(np.uint8)
+#
+#         gt_mask = skimage.io.imread(mask_file_array[match_index])
+#         assert gt_mask.shape == pred.shape
+#         gt_mask_flat, pred_flat = gt_mask.flatten(), pred.flatten()
+#         precision_score, recall_score, accuracy_score, f1_score, jaccard_score, dice_score, mse, lbl_dice, adjrand = \
+#             segm_comp.metrics_masks(mask_file_array[match_index], pred, gt_mask, num_classes, output_dir)
+#         # tn, fp, fn, tp = segm_comp.get_pair_confusion_matrix(gt_mask, pred)
+#         # lbltn, lblfp, lblfn, lbltp = segm_comp.get_multilabel_confusion_matrix(gt_mask_flat, pred_flat)
+#         avg_precision_score += precision_score
+#         avg_recall_score += recall_score
+#         avg_accuracy_score += accuracy_score
+#         avg_f1_score += f1_score
+#         avg_dice += dice_score
+#         avg_jaccard += jaccard_score
+#         avg_mse += mse
+#         avg_adjusted_rand += adjrand
+#         gt_mask_labels = np.unique(gt_mask).tolist()
+#         pred_labels = np.unique(pred).tolist()
+#         # all_labels = sorted(list(set(gt_mask_labels + pred_labels)))
+#
+#         all_labels = sorted(list(set(gt_mask_labels + all_labels)))
+#         # print(f"\npred LABELS: {np.unique(pred)}, gt_mask LABELS: {np.unique(gt_mask)}")
+#         # print(f"\tALL LABELS: {all_labels}")
+#         # print(f"\t\tDICE LABELS: {lbl_dice}")
+#
+#         for l, label in enumerate(gt_mask_labels):
+#             if f"Dice_{str(label)}" not in labelwisedice_nvals:
+#                 labelwisedice_nvals[f"Dice_{str(label)}"] = 0
+#             if f"Dice_{str(label)}" not in average_label_dice:
+#                 average_label_dice[f"Dice_{str(label)}"] = 0.0
+#             if np.sum(gt_mask == label) > 0 and np.sum(pred == label) > 0:
+#                 # only consider when predicted or GT has labels
+#                 average_label_dice[f"Dice_{str(label)}"] += lbl_dice[f"{label}"]
+#                 labelwisedice_nvals[f"Dice_{str(label)}"] += 1
+#         ##########################
+#         # name_start = file_array[i].find('2')
+#         # name = file_array[i] #[name_start:100]
+#
+#         ############
+#         # TODO disabled for INFER numerical evaluations - should be enabled in the future
+#         basename = os.path.basename(file_array[i])
+#         output_fullpath = str(output_dir) + "/pred_{}".format(basename)
+#         # print('done:', basename, end='\t')
+#         skimage.io.imsave(output_fullpath, pred)
+#
+#     if len(file_array) > 0:
+#         avg_precision_score /= len(file_array)
+#         avg_recall_score /= len(file_array)
+#         avg_accuracy_score /= len(file_array)
+#         avg_f1_score /= len(file_array)
+#         avg_dice /= len(file_array)
+#         avg_jaccard /= len(file_array)
+#         avg_mse /= len(file_array)
+#         avg_adjusted_rand /= len(file_array)
+#     for l, label in enumerate(all_labels):  # TODO: is this correct?
+#         if labelwisedice_nvals[f"Dice_{str(label)}"] > 0:
+#             if f"Dice_{str(label)}" in average_label_dice:
+#                 average_label_dice[f"Dice_{str(label)}"] /= labelwisedice_nvals[f"Dice_{str(label)}"]
+#     start_time = time.time()
+#     dicelist = sorted(list(average_label_dice.keys()))
+#     fieldnames = ['GTMask_filepath', 'PredMask_filepath', 'Precision', 'Recall', 'Accuracy', 'F1-Score', 'Dice',
+#                   'Jaccard', 'MSE', "Adjusted Rand", 'Exec_time [seconds]'] + dicelist
+#     metrics_name = '_metrics.csv'
+#     print(f"DICELIST: {dicelist}")
+#     path_to_file = output_dir + metrics_name
+#     print('INFO: summary output stats:', path_to_file)
+#     file_exists = os.path.exists(path_to_file)
+#     if not file_exists:
+#         with open(path_to_file, 'w', newline='') as csvfile:
+#             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+#             writer.writeheader()
+#     batchsummary = {a: [0] for a in fieldnames}
+#     batchsummary['GTMask_filepath'] = mask_filepath
+#     batchsummary['PredMask_filepath'] = output_dir
+#     batchsummary['Precision'] = avg_precision_score
+#     batchsummary['Recall'] = avg_recall_score
+#     batchsummary['Accuracy'] = avg_accuracy_score
+#     batchsummary['F1-Score'] = avg_f1_score
+#     batchsummary['Dice'] = avg_dice
+#     batchsummary['Adjusted Rand'] = avg_adjusted_rand
+#     batchsummary['Jaccard'] = avg_jaccard
+#     batchsummary['MSE'] = avg_mse
+#     for l, label in enumerate(all_labels):
+#         if f"Dice_{str(label)}" in average_label_dice:
+#             if np.isnan(average_label_dice[f"Dice_{str(label)}"]) \
+#                     or isinstance(average_label_dice[f"Dice_{str(label)}"], list):
+#                 print("POPPED :\n", average_label_dice.pop(f"Dice_{str(label)}"))  # cleanup for some unintended cases
+#                 print(batchsummary.pop(f"Dice_{str(label)}"))  # cleanup for some unintended cases
+#             else:
+#                 batchsummary[f"Dice_{str(label)}"] = average_label_dice[f"Dice_{str(label)}"]
+#
+#     exec_time = time.time() - start_time
+#     exec_time = int(exec_time)
+#     batchsummary['Exec_time [seconds]'] = exec_time
+#     print(batchsummary)
+#     with open(path_to_file, 'a', newline='') as csvfile:
+#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+#         writer.writerow(batchsummary)
+
+
+def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classes, output_dir, use_avgs=True):
     start_time = time.time()
+    print(f"Use averages = {use_avgs}")
     model = torch.load(model_filepath)
     model.eval()
     file_array = []
@@ -138,15 +299,13 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
         mfilepath = os.path.join(mask_filepath, mfilename)
         mask_file_array.append(mfilepath)
 
-    avg_precision_score = 0.0
-    avg_recall_score = 0.0
-    avg_accuracy_score = 0.0
-    avg_f1_score = 0.0
-    avg_dice = 0.0
-    avg_jaccard = 0.0
-    avg_mse = 0.0
-    average_label_dice = {}  # empty dictionary for all labels
-    all_labels = []
+    avg_precision_score, avg_adjusted_rand, avg_recall_score, avg_accuracy_score = 0.0, 0.0, 0.0, 0.0
+    avg_f1_score, avg_dice, avg_jaccard, avg_mse = 0.0, 0.0, 0.0, 0.0
+    labelwise_dice = {}  # empty dictionary for all labels
+    labelwise_MCM = {}  # empty dictionary for all labels
+    PCM = None
+    known_labels = []
+    cumulative_PCM = None
     for i in range(len(file_array)):
         image_basename = os.path.basename(file_array[i])
         found_match = False
@@ -164,52 +323,56 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
         # load intensity image
         image = skimage.io.imread(file_array[i])
 
+        image = image.astype(np.float32)
         if INFER_Dataset.INFERSegmentationDataset.use_normalization == "zscore_normalize":
             image = INFER_Dataset.INFERSegmentationDataset.zscore_normalize(image)
-        else:
-            image = image.astype(np.float32)
-            pass
-            # print("ignoring normalization")
 
+        #         pred = model(img)
+        #         pred = pred
+        #
+        #         pred = torch.squeeze(pred, 0)
+        #         pred = torch.argmax(pred, 0)
+        #         pred = pred.cpu().detach().numpy().astype(np.uint8)
+        #
+        #         gt_mask = skimage.io.imread(mask_file_array[match_index])
+        #         assert gt_mask.shape == pred.shape
         img = torch.from_numpy(image)
-
         img = torch.unsqueeze(img, 0)
         img = img.type(torch.cuda.FloatTensor)
         pred = model(img)
-        pred = pred
-
         pred = torch.squeeze(pred, 0)
         pred = torch.argmax(pred, 0)
         pred = pred.cpu().detach().numpy().astype(np.uint8)
+        gt_mask = skimage.io.imread(mask_file_array[match_index]).astype(np.uint8)
+        assert gt_mask.shape == pred.shape
+        gt_mask_flat, pred_flat = gt_mask.flatten(), pred.flatten()
 
-        gt_mask = skimage.io.imread(mask_file_array[match_index])
-
-        precision_score, recall_score, accuracy_score, f1_score, jaccard_score, dice_score, mse, lbl_dice = \
-            segm_comp.metrics_masks(mask_file_array[match_index], pred, gt_mask, num_classes, output_dir)
-
-        avg_precision_score += precision_score
-        avg_recall_score += recall_score
-        avg_accuracy_score += accuracy_score
-        avg_f1_score += f1_score
-        avg_dice += dice_score
-        avg_jaccard += jaccard_score
+        if use_avgs:
+            precision_score, recall_score, accuracy_score, f1_score, jaccard_score, dice_score, mse, _, adjrand = \
+                segm_comp.metrics_masks(mask_file_array[match_index], pred, gt_mask, num_classes, output_dir)
+            avg_precision_score += precision_score
+            avg_recall_score += recall_score
+            avg_accuracy_score += accuracy_score
+            avg_f1_score += f1_score
+            avg_dice += dice_score
+            avg_jaccard += jaccard_score
+            avg_adjusted_rand += adjrand
+        else:
+            PCM = segm_comp.get_pair_confusion_matrix(gt_mask_flat, pred_flat)
+            mse = segm_comp.mean_squared_error(gt_mask_flat, pred_flat)
+            if cumulative_PCM is None:
+                cumulative_PCM = np.zeros_like(PCM.shape)
+            cumulative_PCM = cumulative_PCM + PCM
         avg_mse += mse
+
         gt_mask_labels = np.unique(gt_mask).tolist()
         pred_labels = np.unique(pred).tolist()
-        # all_labels = sorted(list(set(gt_mask_labels + pred_labels)))
+        # known_labels = sorted(list(set(gt_mask_labels + known_labels + pred_labels)))
+        known_labels = sorted(list(set(gt_mask_labels + known_labels)))
 
-        all_labels = sorted(list(set(gt_mask_labels + all_labels)))
-        # print(f"\npred LABELS: {np.unique(pred)}, gt_mask LABELS: {np.unique(gt_mask)}")
-        # print(f"\tALL LABELS: {all_labels}")
-        # print(f"\t\tDICE LABELS: {lbl_dice}")
-
-        for l, label in enumerate(gt_mask_labels):
-            if f"Dice_{str(label)}" not in average_label_dice:
-                average_label_dice[f"Dice_{str(label)}"] = 0.0
-            average_label_dice[f"Dice_{str(label)}"] += lbl_dice[f"{label}"]
-        ##########################
-        # name_start = file_array[i].find('2')
-        # name = file_array[i] #[name_start:100]
+        MCM = segm_comp.get_multilabel_confusion_matrix(gt_mask_flat, pred_flat, labelslist=known_labels)
+        labelwise_MCM = segm_comp.combine_multilabel_confusion_matrices(MCM_new=MCM, all_labels=known_labels,
+                                                                        labelwise_MCM=labelwise_MCM)
 
         ############
         # TODO disabled for INFER numerical evaluations - should be enabled in the future
@@ -217,31 +380,45 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
         output_fullpath = str(output_dir) + "/pred_{}".format(basename)
         # print('done:', basename, end='\t')
         skimage.io.imsave(output_fullpath, pred)
-
     if len(file_array) > 0:
-        avg_precision_score /= len(file_array)
-        avg_recall_score /= len(file_array)
-        avg_accuracy_score /= len(file_array)
-        avg_f1_score /= len(file_array)
-        avg_dice /= len(file_array)
-        avg_jaccard /= len(file_array)
-        avg_mse /= len(file_array)
-        for l, label in enumerate(all_labels):
-            if f"Dice_{str(label)}" in average_label_dice:
-                average_label_dice[f"Dice_{str(label)}"] /= len(file_array)
-    start_time = time.time()
-    dicelist = sorted(list(average_label_dice.keys()))
+        MCM_combined, sorted_labels = segm_comp.getMCMfromDict(labelwiseMCM=labelwise_MCM)
+        if use_avgs:
+            avg_precision_score /= len(file_array)
+            avg_recall_score /= len(file_array)
+            avg_accuracy_score /= len(file_array)
+            avg_f1_score /= len(file_array)
+            avg_dice /= len(file_array)
+            avg_jaccard /= len(file_array)
+            avg_mse /= len(file_array)
+            avg_adjusted_rand /= len(file_array)
+        else:
+            avg_accuracy_score, avg_precision_score, avg_recall_score, avg_f1_score = segm_comp.cumulative_multilabel_aprf(
+                PCM)
+            avg_dice = segm_comp.cumulative_multilabel_dice(PCM)
+            avg_jaccard = segm_comp.cumulative_multilabel_jaccard(PCM)
+            avg_mse /= len(file_array)
+            avg_adjusted_rand = segm_comp.cumulative_adjusted_rand(PCM)
+        multilabel_Dice = segm_comp.cumulative_multilabel_dice(MCM_combined)
+        for l, label in enumerate(sorted_labels):
+            labelwise_dice[f"Dice_{label}"] = multilabel_Dice[l]
+    # start_time = time.time()
+    if not use_avgs:
+        PCM_combined, _ = segm_comp.getMCMfromDict(labelwiseMCM=cumulative_PCM)
+
+    dicelist = sorted(list(labelwise_dice.keys()))
     fieldnames = ['GTMask_filepath', 'PredMask_filepath', 'Precision', 'Recall', 'Accuracy', 'F1-Score', 'Dice',
-                  'Jaccard', 'MSE', 'Exec_time [seconds]'] + dicelist
+                  'Jaccard', 'MSE', "Adjusted Rand", 'Exec_time [seconds]'] + dicelist
     metrics_name = '_metrics.csv'
     print(f"DICELIST: {dicelist}")
     path_to_file = output_dir + metrics_name
     print('INFO: summary output stats:', path_to_file)
-    file_exists = os.path.exists(path_to_file)
-    if not file_exists:
-        with open(path_to_file, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
+    # if not os.path.exists(path_to_file):
+    if os.path.exists(path_to_file):
+        newpath = output_dir + "metrics_old.csv"
+        os.rename(path_to_file, newpath)
+    with open(path_to_file, 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
     batchsummary = {a: [0] for a in fieldnames}
     batchsummary['GTMask_filepath'] = mask_filepath
     batchsummary['PredMask_filepath'] = output_dir
@@ -250,16 +427,13 @@ def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classe
     batchsummary['Accuracy'] = avg_accuracy_score
     batchsummary['F1-Score'] = avg_f1_score
     batchsummary['Dice'] = avg_dice
+    batchsummary['Adjusted Rand'] = avg_adjusted_rand
     batchsummary['Jaccard'] = avg_jaccard
     batchsummary['MSE'] = avg_mse
-    for l, label in enumerate(all_labels):
-        if f"Dice_{str(label)}" in average_label_dice:
-            if np.isnan(average_label_dice[f"Dice_{str(label)}"]) \
-                    or isinstance(average_label_dice[f"Dice_{str(label)}"], list):
-                average_label_dice.pop(f"Dice_{str(label)}")  # cleanup for some unintended cases
-                batchsummary.pop(f"Dice_{str(label)}")  # cleanup for some unintended cases
-            else:
-                batchsummary[f"Dice_{str(label)}"] = average_label_dice[f"Dice_{str(label)}"]
+    for l, label in enumerate(known_labels):
+        if f"Dice_{str(label)}" in labelwise_dice:
+            batchsummary[f"Dice_{str(label)}"] = labelwise_dice[f"Dice_{str(label)}"]
+
     exec_time = time.time() - start_time
     exec_time = int(exec_time)
     batchsummary['Exec_time [seconds]'] = exec_time

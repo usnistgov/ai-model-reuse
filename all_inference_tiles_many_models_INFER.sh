@@ -1,0 +1,48 @@
+
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/inference_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/inference_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/inference_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/inference_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/inference_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/inference_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/inference_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/inference_masks
+
+
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/measured_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/measured_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/measured_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/measured_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/measured_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/measured_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/measured_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/measured_masks
+
+# measured and normal are flipped for measuredtrain
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/MeasuredTrain/H0/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/inference_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/inference_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/MeasuredTrain/H0H1/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/inference_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/inference_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/MeasuredTrain/Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/inference_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/inference_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/MeasuredTrain/H0Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/inference_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/inference_masks
+
+
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/MeasuredTrain/H0/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/measured_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0/measured_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/MeasuredTrain/H0H1/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/measured_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0H1/measured_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/MeasuredTrain/Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/measured_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/Hdark/measured_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/ASD_3_4/MeasuredTrain/H0Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/measured_images ~/INFER_Projects/stats-simulations/data/ASD_3_4/H0Hdark/measured_masks
+
+
+# CG1DPS
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0/inference_images ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0/inference_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0H1/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0H1/inference_images ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0H1/inference_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/Hdark/inference_images ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/Hdark/inference_masks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0Hdark/inference_images ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0Hdark/inference_masks
+
+
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0/tiled_Measured_H0 ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/tiled_measuredmasks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0H1/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0H1/tiled_Measured_H0H1 ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/tiled_measuredmasks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/Hdark/tiled_Measured_Hdark ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/tiled_measuredmasks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0Hdark/tiled_Measured_H0Hdark ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/tiled_measuredmasks
+
+# measured and normal are flipped for measuredtrain
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/H0/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0/inference_images ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0/inference_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/H0H1/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0H1/inference_images ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0H1/inference_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/Hdark/inference_images ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/Hdark/inference_masks
+source inference_tiles_measured_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/H0Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0Hdark/inference_images ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0Hdark/inference_masks
+
+
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/H0/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0/tiled_Measured_H0 ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/tiled_measuredmasks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/H0H1/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0H1/tiled_Measured_H0H1 ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/tiled_measuredmasks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/Hdark/tiled_Measured_Hdark ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/tiled_measuredmasks
+source inference_tiles_many_models_INFER.sh ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/MeasuredTrain/H0Hdark/pytorchOutputMtoM_INFER_final ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/H0Hdark/tiled_Measured_H0Hdark ~/INFER_Projects/stats-simulations/data/CG1D_PS_comparechannels/tiled_measuredmasks
