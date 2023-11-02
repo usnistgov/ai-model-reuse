@@ -37,13 +37,13 @@ def get_best_model_df(df, metric=None, groupby=None):
     if metric is None:
         metric = "crossentropy"
     if metric in ["CE", "crossentropy"]:
-        df['optimal_metric'] = np.sqrt(df['Train loss'] ** 2 + df['Test_loss'] ** 2)
+        df['optimal_metric'] = np.sqrt(df['Train loss'] ** 2 + df['Validation loss'] ** 2)
         optimal_product = df.groupby(groupby)['optimal_metric'].idxmin()  # .reset_index()
     elif metric == "Dice":
         df['optimal_metric'] = df["Dice"]
         optimal_product = df.groupby(groupby)['optimal_metric'].idxmax()  # .reset_index()
     # print(f"minmetric { df}")
-    # print(f"minmetric { df['optimal_metric']}")
+    print(f"minmetric { df['optimal_metric']}")
     # best_id_ch = df['optimal_metric'].idxmin()
     best_df_ch = df.loc[optimal_product]
     # minloss = df.min()
@@ -71,17 +71,19 @@ def do_stat_annotations(df, ax, pair_param, x=None, y=None, order=None, pair_typ
             pair_param_uniques = list(df.lr.unique())
         # pairs = list(set([(a, b) for a in pair_param_uniques for b in pair_param_uniques if a != b]))
         all_pairs = list(combinations(pair_param_uniques, 2))
-        pairs = list(set(tuple(sorted(all_pair)) for all_pair in all_pairs))
-        print("ANNO\n", df[df.isna().any(axis=1)], "\n", df.dtypes)
-        annotator = Annotator(ax, pairs, data=df, x=x, y=y, order=order)
-        # for pair in pairs:
-        #     g1, g2 = p
-        print(pairs)
-        print(pairs[0])
-        print(pairs[0][1], type(pairs[0][1]))
-        print(ax.collections[0].get_array())
-        # print(df[df[pair_param] == pairs[0][1]])
-        exit()
+        # print(all_pairs)
+        # pairs = list(set(tuple(sorted(all_pair)) for all_pair in all_pairs))
+        # print("ANNOTATING\n", df[df.isna().any(axis=1)], "\n", df.dtypes)
+        annotator = Annotator(ax, all_pairs, data=df, x=x, y=y, order=order)
+        # TODO: Add custom pairs
+        # # for pair in pairs:
+        # #     g1, g2 = p
+        # print(pairs)
+        # print(pairs[0])
+        # print(pairs[0][1], type(pairs[0][1]))
+        # print(ax.collections[0].get_array())
+        # # print(df[df[pair_param] == pairs[0][1]])
+        # exit()
         annotator.configure(test='Mann-Whitney', text_format='star', loc='outside', line_height=0.005, text_offset=0,
                             fontsize=12)
         # annotator.configure(test='t-test_ind', text_format='star', loc='outside', line_height=0.01, text_offset=1)
@@ -101,16 +103,16 @@ def do_stat_annotations(df, ax, pair_param, x=None, y=None, order=None, pair_typ
 def plot_metrics_comparison(df, savepath, comparemetrics=None, tr_thresh=100, tst_thresh=100, illustrate_thresh=True,
                             draw_lines=True):
     if comparemetrics is None:
-        comparemetrics = ['Train loss', 'Test_loss']
+        comparemetrics = ['Train loss', 'Validation loss']
     fig = plt.figure(1)
     metric1, metric2 = comparemetrics
     # tr_thresh = 100
     # tst_thresh = 100
     df = df[df['Train loss'] <= tr_thresh]
-    df = df[df['Test_loss'] <= tst_thresh]
+    df = df[df['Validation loss'] <= tst_thresh]
     if draw_lines:
-        if metric1 in ['Train loss', 'Test_loss']:
-            if metric2 in ['Train loss', 'Test_loss']:
+        if metric1 in ['Train loss', 'Validation loss']:
+            if metric2 in ['Train loss', 'Validation loss']:
                 if illustrate_thresh == True:
                     x = [1, 2, 3, 4, 5]
                     y = [1, 2, 3, 4, 5]
@@ -118,7 +120,6 @@ def plot_metrics_comparison(df, savepath, comparemetrics=None, tr_thresh=100, ts
                     plt.hlines(y, 0, x, linestyle="solid")
     sns.scatterplot(df, x=metric1, y=metric2, s=5, alpha=0.95, hue=df['channel'],
                     palette='Spectral')  # label=f'{metric1}_vs_{metric2}'
-    # plt.scatter(dataF['Train_loss'][0:], dataF['Test_loss'][0:], c='blue', s=5, label='loss comparison', hue=dataF['epoch'])
     plt.legend(bbox_to_anchor=(1.02, 1.02), loc="upper left")
     title_test = f"{metric1} vs {metric2}"
     plt.title(title_test, fontsize=20)
@@ -132,7 +133,7 @@ def plot_metrics_comparison(df, savepath, comparemetrics=None, tr_thresh=100, ts
 
 def get_stability(df, use_best=False, metric="CE", annotate_best_points=False, annotate_stability_stats=False):
     """
-    Stability of a model is calculated  based on change of train and Test_loss over the entire model.
+    Stability of a model is calculated  based on change of train and Validation loss over the entire model.
 
     :param df: dataframe containing all data
     :param use_best: present stability for the best models
@@ -155,10 +156,10 @@ def get_stability(df, use_best=False, metric="CE", annotate_best_points=False, a
             for pt in pts:
                 df_ch_lr_pt = df_ch_lr[df_ch_lr['pretrained'] == pt]
                 # find slope of training and test curves
-                mintestloss = df_ch_lr_pt['Test_loss'].min()
+                mintestloss = df_ch_lr_pt['Validation loss'].min()
                 mintrainloss = df_ch_lr_pt['Train loss'].min()
-                # df_testvals= df_ch_lr_pt[['epoch','Test_loss']].to_numpy()
-                df_trainvals, df_testvals = df_ch_lr_pt['Train loss'].to_numpy(), df_ch_lr_pt['Test_loss'].to_numpy()
+                # df_testvals= df_ch_lr_pt[['epoch','Validation loss']].to_numpy()
+                df_trainvals, df_testvals = df_ch_lr_pt['Train loss'].to_numpy(), df_ch_lr_pt['Validation loss'].to_numpy()
                 df_testvals = df_testvals - mintestloss
                 df_trainvals = df_trainvals - mintrainloss
                 A = np.vstack([df_trainvals, np.ones(len(df_trainvals))]).T
@@ -166,7 +167,7 @@ def get_stability(df, use_best=False, metric="CE", annotate_best_points=False, a
                 residual_arr_df.loc[len(residual_arr_df), residual_arr_df.columns] = channel, lr, pt, m, c, tt_residual
                 # r2_tt = 1 - tt_residual / (df_testvals.size * df_testvals.var())
                 # print(m, c, tt_residual)
-    # print(f"residual array size: {residual_arr_df}")
+    # print(f"residual array: {residual_arr_df}")
     ######################################################################################
     qvals = [channels, lrs, pts]
     quants = ['channel', 'lr', 'pretrained']
@@ -180,8 +181,6 @@ def get_stability(df, use_best=False, metric="CE", annotate_best_points=False, a
         'whiskerprops': {'color': 'green'},
         'capprops': {'color': 'green'}
     }
-    # props={}
-
     ####################################################################################################################
     ## Plotting residuals for all 48 models. Comparison between a secondary parameter included.
     ####################################################################################################################
@@ -231,7 +230,7 @@ def get_stability(df, use_best=False, metric="CE", annotate_best_points=False, a
             do_stat_annotations(df=residual_arr_df_na, ax=plt.gca(), pair_param=quant, x=quant, y="residual",
                                 order=None)
 
-        # print("HIHI")
+        print("HIHI")
         if use_best:
             best_df_quant = get_best_model_df(df, groupby=[quant], metric=metric)
             columns_to_match = quants
@@ -276,6 +275,7 @@ def visualize_best_models(df, metric="CE", annotate_stats=False, annotate_best_p
 
     i = 0
     best_df_all = get_best_model_df(df, groupby=quants, metric=metric)
+    print("BEST\n",best_df_all)
     for qvals, quant in zip(qvaltype, quants):
         best_df_quant = get_best_model_df(df, groupby=[quant], metric=metric)
         fig = plt.figure(i)
@@ -331,7 +331,7 @@ def model_speed(df, use_best=True, metric="CE"):
         for lim in thresholds:
             df_ch = df[df['channel'] == channel]
             df_ch = df_ch[df_ch['Train loss'] <= lim]
-            df_ch = df_ch[df_ch['Test_loss'] <= lim]
+            df_ch = df_ch[df_ch['Validation loss'] <= lim]
 
             channel_model_speed[channels.index(channel), thresholds.index(lim)] = len(df_ch.index)
             # print(channel, lim, len(df_ch.index))
@@ -364,7 +364,7 @@ def model_speed(df, use_best=True, metric="CE"):
         for lim in thresholds:
             df_lr = df[df['lr'] == lr]
             df_lr = df_lr[df_lr['Train loss'] <= lim]
-            df_lr = df_lr[df_lr['Test_loss'] <= lim]
+            df_lr = df_lr[df_lr['Validation loss'] <= lim]
             lr_model_speed[lrs.index(lr), thresholds.index(lim)] = len(df_lr.index)
     fig = plt.figure(2)
     for rl, rowl in enumerate(lr_model_speed):
@@ -393,7 +393,7 @@ def model_speed(df, use_best=True, metric="CE"):
         for lim in thresholds:
             df_pt = df[df['pretrained'] == pt]
             df_pt = df_pt[df_pt['Train loss'] <= lim]
-            df_pt = df_pt[df_pt['Test_loss'] <= lim]
+            df_pt = df_pt[df_pt['Validation loss'] <= lim]
             pt_model_speed[pts.index(pt), thresholds.index(lim)] = len(df_pt.index)
     fig = plt.figure(3)
     # plt.plot(pt_model_speed.T)
@@ -418,16 +418,16 @@ def model_speed(df, use_best=True, metric="CE"):
 
 
 if __name__ == "__main__":
-    eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/infer_tile_images.csv"
-    eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/inference_Measured.csv"
-    training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/training.csv"
-    savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/figupdates_final"
+    eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/infer_tile_images.csv"
+    eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/inference_Measured.csv"
+    training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/training.csv"
+    savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/figupdates_final1"
     # eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/infer_tile_images.csv"
     # eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/inference_Measured.csv"
     # training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/training.csv"
     # savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/figupdates"
     dataF = pd.read_csv(training_data)
-    allmetrics = ['Train loss', 'Test_loss', 'precision', 'recall', 'accuracy', 'F1-Score', 'Dice', 'Jaccard',
+    allmetrics = ['Train loss', 'Validation loss', 'precision', 'recall', 'accuracy', 'F1-Score', 'Dice', 'Jaccard',
                   'MSE']
     ##################################################################
     calcmetrics = True
@@ -436,11 +436,11 @@ if __name__ == "__main__":
         dataF = dataF.replace('Hdark', '{DF}')
         dataF = dataF.replace('H0H1', '{H0,H1}')
         dataF = dataF.replace('H0Hdark', '{H0,DF}')
-        dataF = dataF.rename(columns={'Train_loss': 'Train loss', 'Test_loss': 'Test_loss'})
+        dataF = dataF.rename(columns={'Train_loss': 'Train loss', 'Test_loss': 'Validation loss'})
     except Exception as renameerr:
         print(renameerr)
         exit()
-    # print(dataF.channel)
+    # print(dataF)
     # exit()
     if calcmetrics:
         get_stability(dataF, use_best=True, metric="crossentropy", annotate_best_points=False,
@@ -452,10 +452,10 @@ if __name__ == "__main__":
             model_speed(dataF, use_best=True, metric=met)
     ##################################################################
 
-    visualize = False
+    visualize = True
     if visualize:
         for i in allmetrics:
             for j in allmetrics:
                 if i != j:
                     plot_metrics_comparison(dataF, savepath=savepath, comparemetrics=[i, j], tr_thresh=5,
-                                            tst_thresh=100, draw_lines=False)
+                                            tst_thresh=5, draw_lines=True)
