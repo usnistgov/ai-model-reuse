@@ -18,6 +18,7 @@ according to the split fraction
 
 """
 
+
 def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test_image_folder, test_mask_folder, fraction):
     image_folder = os.path.abspath(image_folder)
     mask_folder = os.path.abspath(mask_folder)
@@ -49,14 +50,15 @@ def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test
             copyfile(file, "{}/{}".format(test_image_folder, fn))
             copyfile(mask_file, "{}/{}".format(test_mask_folder, fn))
 
+
 def main():
     parser = argparse.ArgumentParser(prog='split', description='Script that splits data')
-    parser.add_argument('--image_dir', type=str) #full path of image folder
-    parser.add_argument('--mask_dir', type=str) #full path of mask folder
-    parser.add_argument('--train_image_dir', type=str) #full path of train image folder destination
-    parser.add_argument('--test_image_dir', type=str) #full path of test image folder destination
-    parser.add_argument('--train_mask_dir', type=str) #full path of train mask folder destination
-    parser.add_argument('--test_mask_dir', type=str) #full path of test mask folder destination
+    parser.add_argument('--image_dir', type=str)  # full path of image folder
+    parser.add_argument('--mask_dir', type=str)  # full path of mask folder
+    parser.add_argument('--train_image_dir', type=str)  # full path of train image folder destination
+    parser.add_argument('--test_image_dir', type=str)  # full path of test image folder destination
+    parser.add_argument('--train_mask_dir', type=str)  # full path of train mask folder destination
+    parser.add_argument('--test_mask_dir', type=str)  # full path of test mask folder destination
     parser.add_argument('--fraction', type=float)
     args, unknown = parser.parse_known_args()
 
@@ -67,6 +69,6 @@ def main():
     split(args.image_dir, args.mask_dir, args.train_image_dir, args.train_mask_dir,
           args.test_image_dir, args.test_mask_dir, args.fraction)
 
+
 if __name__ == "__main__":
     main()
-

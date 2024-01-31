@@ -5,6 +5,7 @@
 from PIL import Image
 import os
 import argparse
+import tifffile
 
 """
 This class will tile each image in the input folder into tiles saved in the output folder.
@@ -36,48 +37,81 @@ def imgcrop(input, xPieces, yPieces, img_name, output_dir):
     imgwidth, imgheight = im.size
     height = imgheight // yPieces
     width = imgwidth // xPieces
-    # xnum_digits = count_digits(xPieces)
-    # ynum_digits = count_digits(yPieces)
 
     for i in range(0, yPieces):
-        # row_id = str(i)
-        # row_id.rjust(ynum_digits, '0')
         for j in range(0, xPieces):
             box = (j * width, i * height, (j + 1) * width, (i + 1) * height)
-            # include all pixels in the image by modifying the size of the last tile
-            # Final tiles removed as their larger sizes cant currently be handled.
-            # if i == yPieces-1:
-            #     box = (j * width, i * height, (j + 1) * width, imgheight)
-            # if j == xPieces-1:
-            #     box = (j * width, i * height, imgwidth, (i + 1) * height)
-            # if i == yPieces-1 and j == xPieces-1:
-            #     box = (j * width, i * height, imgwidth, imgheight)
-
             a = im.crop(box)
             a.save(output_dir + "/" + img_name + "_" + str(i) + "-" + str(j) + file_extension)
-
             # TODO this change works here but has to be propagated to the stitching.py code
             # col_id = str(j)
             # col_id.rjust(xnum_digits, '0')
-            #
-            # a.save(output_dir + "/" + img_name + "_r" + row_id + "_c" + col_id + file_extension)
 
 
-def tile(image_dir, output_dir, xPieces, yPieces):
+def imgcrop_tomo(input, xPieces, yPieces, zPieces, img_name, output_dir):
+    im = tifffile.tifffile.imread(input)
+    im2 = Image.open(input)
+    print("Image.open: ", im.shape, "tifffile.imread: ", im2.size)
+    img_name, file_extension = os.path.splitext(img_name)
+    dims = im.ndim
+    if dims == 3:
+        imglength, imgwidth, imgheight = im.shape  # assuming ZXY
+        height = imgheight // yPieces
+        width = imgwidth // xPieces
+        length = imglength // zPieces
+
+        for i in range(0, yPieces):
+            for j in range(0, xPieces):
+                for k in range(0, zPieces):
+                    # print(output_dir + "/" + img_name + "_" + str(k) + "-" + str(i) + "-" + str(j) +
+                    #       file_extension)
+                    a = im[k * length:(k + 1) * length, j * width: (j + 1) * width, i * height:(i + 1) * height]
+                    tifffile.tifffile.imwrite(output_dir + "/" + img_name + "_" + str(k) + "-" + str(i) + "-" + str(j) +
+                                              file_extension, data=a)
+    elif dims == 4:
+        xis, imglength, imgwidth, imgheight = im.shape  # assuming ZXY
+        height = imgheight // yPieces
+        width = imgwidth // xPieces
+        length = imglength // zPieces
+
+        for i in range(0, yPieces):
+            for j in range(0, xPieces):
+                for k in range(0, zPieces):
+                    # print(output_dir + "/" + img_name + "_" + str(k) + "-" + str(i) + "-" + str(j) +
+                    #       file_extension)
+                    a = im[:, k * length:(k + 1) * length, j * width: (j + 1) * width, i * height:(i + 1) * height]
+                    tifffile.tifffile.imwrite(output_dir + "/" + img_name + "_" + str(k) + "-" + str(i) + "-" + str(j) +
+                                              file_extension, data=a, imagej=True)
+
+
+def tile(image_dir_or_file, output_dir, xPieces, yPieces, zPieces=None):
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     file_array = []
     filename_array = []
-    for filename in os.listdir(image_dir):
-        filepath = os.path.join(image_dir, filename)
-        if filename.split('.')[-1] in ["tif", "tiff"]:
-            file_array.append(filepath)
-            filename_array.append(filename)
-
-    i = 0
-    for file in file_array:
-        imgcrop(file, xPieces, yPieces, filename_array[i], output_dir)
-        i += 1
+    is_dir = os.path.isdir(image_dir_or_file)
+    if is_dir:
+        for filename in os.listdir(image_dir_or_file):
+            filepath = os.path.join(image_dir_or_file, filename)
+            if filename.split('.')[-1] in ["tif", "tiff"]:
+                file_array.append(filepath)
+                filename_array.append(filename)
+        ##########################################################################
+        i = 0
+        for file in file_array:
+            if zPieces is None:
+                imgcrop(file, xPieces, yPieces, filename_array[i], output_dir)
+            else:
+                imgcrop_tomo(file, xPieces, yPieces, zPieces, filename_array[i], output_dir)
+            i += 1
+        ##########################################################################
+    else:
+        assert image_dir_or_file.split('.')[-1] in ["tif", "tiff"], "no tiff file found"
+        image_name = os.path.basename(image_dir_or_file)
+        if zPieces is None:
+            imgcrop(image_dir_or_file, xPieces, yPieces, image_name, output_dir)
+        else:
+            imgcrop_tomo(image_dir_or_file, xPieces, yPieces, zPieces, image_name, output_dir)
 
 
 def main():
@@ -86,13 +120,14 @@ def main():
     parser.add_argument('--output_dir', type=str, help='folder path to saving output tiles')
     parser.add_argument('--xPieces', type=int, help='number of image cuts along x-axis')
     parser.add_argument('--yPieces', type=int, help='number of image cuts along y-axis')
+    parser.add_argument('--zPieces', type=int, help='number of image cuts along y-axis', default=None)
     args, unknown = parser.parse_known_args()
 
     if args.image_dir is None:
         print('ERROR: missing input image dir ')
         return
 
-    tile(args.image_dir, args.output_dir, args.xPieces, args.yPieces)
+    tile(args.image_dir, args.output_dir, args.xPieces, args.yPieces, args.zPieces)
 
 
 if __name__ == "__main__":

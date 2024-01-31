@@ -34,6 +34,9 @@ def initializeModel(output_channels, pretrained, name, input_channels=252, bs=80
     if name == 'LSTM_Default':
         model = LSTMModel(input_size=input_channels, hidden_size=128, num_layers=2, num_classes=output_channels)
         combine = False
+    if name == 'GRU_Tomo':
+        model = GRU_3D_Model(input_size=input_channels, hidden_size=128, num_layers=2, num_classes=output_channels)
+        combine = False
     if name == 'Conv1d_Default':
         model = INFERFeatureExtractor1D(input_channels=input_channels, standalone=True, output_channels=output_channels)
         combine = False
@@ -319,7 +322,11 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
             else:
                 toadd = cf[i][i] / sums[i]
             running_precision += toadd
-        avg_precision = running_precision / (classes - avgsubtract)
+        print(classes, avgsubtract, running_precision)
+        if running_precision:
+            avg_precision = running_precision / (classes - avgsubtract)
+        else:
+            avg_precision = 0
         col_sums = np.sum(cf, axis=0).tolist()
         running_recall = 0
         avgsubtract = 0
@@ -331,8 +338,14 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
             else:
                 toadd = cf[i][i] / col_sums[i]
             running_recall += toadd
-        avg_recall = running_recall / (classes - avgsubtract)
-        f1 = ((avg_precision * avg_recall) / (avg_precision + avg_recall)) * 2
+        if running_recall:
+            avg_recall = running_recall / (classes - avgsubtract)
+        else:
+            avg_recall = 0
+        if avg_recall or avg_precision:
+            f1 = ((avg_precision * avg_recall) / (avg_precision + avg_recall)) * 2
+        else:
+            f1 = 0
         batchsummary['Per-Pixel Accuracy'] = epoch_accuracy
         batchsummary['Test_loss'] = epoch_loss
         batchsummary['Precision'] = avg_precision

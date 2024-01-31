@@ -59,8 +59,6 @@ def tile(final_stack, savepath, xPieces, yPieces, ext=".tif"):
         endy = starty + height
         endx = startx + width
         crop_stack = final_stack[..., startx:endx, starty:endy]
-        # bbox = (startx, endx, starty, endy)
-        # print("Bbox: ", bbox, "bbox.shape = ", crop_stack.shape)
         imsave(f"{savepath}_{i}-{j}.{ext}", crop_stack)
 
 
@@ -111,7 +109,7 @@ def parse_INFER_file_name(name):
     return moire, wavelength, z, float(xi), ch, ext
 
 
-def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
+def combine(image_dir, output_dir, xPieces, yPieces, zPieces=None, imaging_modes=None, tomo=False):
     """
     Combines image sequences into stacks of dimensions (H,Ξ,X,Y) or (H,Ξ,X,Y,Z)
     """
@@ -127,14 +125,14 @@ def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
     xiss = sorted(list(set(xis)))
     chss = sorted(list(set(chs)))
 
-    if usechannels is None:
-        usechannels = ['H0', 'H1', 'H1dark']
+    if imaging_modes is None:
+        imaging_modes = ['H0', 'H1', 'H1dark']
     else:
-        usechannels = [str(s) for s in usechannels]
-        usechannels = [s.replace('Hdark','H1dark') for s in usechannels]
+        imaging_modes = [str(s) for s in imaging_modes]
+        imaging_modes = [s.replace('Hdark', 'H1dark') for s in imaging_modes]
 
-        assert all(ch in chss for ch in usechannels), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark', currently{usechannels}"
-
+        assert all(ch in chss for ch in
+                   imaging_modes), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark', currently{imaging_modes}"
 
     image_dirname = os.path.basename(os.path.normpath(image_dir))
     expt_name, sample_type, ai_expt, sample_id = parse_INFER_folder_names(image_dirname)
@@ -146,13 +144,17 @@ def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
     # image_stack combines all images (all xi and channels) into a single stack
     image_stack = return_images_from_paths(file_array)
     # print("image_stack", image_stack.dtype)
-    assert all(ch in chs for ch in usechannels), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark', currently{usechannels}"
-    nxis, nchs = list(np.unique(xis)), list(np.unique(usechannels))  # sorted values
-    # TODO: Update for 3D: example for 3d the value will be -3
-    selected_stack = np.zeros((len(nxis), len(nchs)) + image_stack.shape[-2:], dtype=image_stack.dtype)
+    assert all(ch in chs for ch in
+               imaging_modes), f"Channel must be a list of one or more of 'H0', 'H1', 'H1dark', currently{imaging_modes}"
+    nxis, nchs = list(np.unique(xiss)), list(np.unique(imaging_modes))  # sorted values
+    if tomo:
+        # For 3D, the value will be -3
+        selected_stack = np.zeros((len(nxis), len(nchs)) + image_stack.shape[-3:], dtype=image_stack.dtype)
+    else:
+        selected_stack = np.zeros((len(nxis), len(nchs)) + image_stack.shape[-2:], dtype=image_stack.dtype)
 
     for f, filename in enumerate(os.listdir(image_dir)):
-        if chs[f] in usechannels:
+        if chs[f] in imaging_modes:
             selected_stack[nxis.index(xis[f]), nchs.index(chs[f])] = image_stack[f]
     ss_shape = selected_stack.shape
     # Combine XI and C dimensions
@@ -166,21 +168,19 @@ def combine(image_dir, output_dir, xPieces, yPieces, usechannels=None):
     tile(final_stack, savepath, xPieces, yPieces, ext=ext)
 
 
-def combine_subfolders(image_dir, output_dir, xPieces, yPieces, usechannels=None):
+def combine_subfolders(image_dir, output_dir, xPieces, yPieces, zPieces=None, usechannels=None, directory=False):
     """
     It is assumed that the image_dir has a list of folders with names corresponding to mask names.
     Each folder contains a set of images that can be combined to obtain a single measurement.
     """
-    nondirfiles = False
     for name in os.listdir(image_dir):
         dirorfile = image_dir + "/" + name
-        # subdir = os.path.join(image_dir, dirname)
         if os.path.isdir(dirorfile):
-            combine(dirorfile, output_dir, xPieces, yPieces, usechannels=usechannels)
+            combine(dirorfile, output_dir, xPieces, yPieces, imaging_modes=usechannels)
         else:
-            nondirfiles = True
-    if nondirfiles:
-        combine(image_dir, output_dir, xPieces, yPieces, usechannels=usechannels)
+            directory = True
+    if directory:
+        combine(image_dir, output_dir, xPieces, yPieces, imaging_modes=usechannels)
 
 
 def main():
@@ -191,17 +191,15 @@ def main():
                         default=None)
     parser.add_argument('--xPieces', type=int, help='number of image cuts along x-axis')
     parser.add_argument('--yPieces', type=int, help='number of image cuts along y-axis')
+    parser.add_argument('--zPieces', type=int, help='number of image cuts along y-axis')
     args, unknown = parser.parse_known_args()
-    print("CHANNELS\t",args.channels)
+    print("CHANNELS\t", args.channels)
     if args.image_dir is None:
         print('ERROR: missing input image dir ')
         return
-    combine_subfolders(args.image_dir, args.output_dir, args.xPieces, args.yPieces, usechannels=args.channels)
-    # image_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/CG1D_INFER_ML_test/"
-    # output_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/CG1D_Prepared_Data/"
-    # xPieces = 10
-    # yPieces = 10
-    # combine_subfolders(image_dir, output_dir, xPieces, yPieces)
+    isdirectory = os.path.isdir(args.image_dir)
+    combine_subfolders(args.image_dir, args.output_dir, args.xPieces, args.yPieces, usechannels=args.channels,
+                       directory=isdirectory, zPieces=args.zPieces)
 
 
 if __name__ == "__main__":

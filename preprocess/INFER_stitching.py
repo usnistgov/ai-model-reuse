@@ -4,6 +4,11 @@
 from PIL import Image
 import os
 import argparse
+import itertools
+import re
+import numpy as np
+import pandas as pd
+import tifffile
 
 """
 This class will stitch tiles in the input folder into a mosaic of tiles saved as one image in the output folder.
@@ -15,37 +20,41 @@ This has to be fixed on the tiling side (tile size is a floor of dimensions (hei
 and in the stitching code (tiles are assumed to have the same dimensions as the first tile in the collection)
  
  __author__  = "Pushkar Sathe"
- __email__   = "peter.bajcsy@nist.gov"
+ __email__   = "pushkar.sathe@nist.gov"
 """
 
 
-# def imgcrop(input, xPieces, yPieces, img_name, output_dir):
-#     im = Image.open(input)
-#     img_name, file_extension = os.path.splitext(img_name)
-#     imgwidth, imgheight = im.size
-#     height = imgheight // yPieces
-#     width = imgwidth // xPieces
-#     for i in range(0, yPieces):
-#         for j in range(0, xPieces):
-#             box = (j * width, i * height, (j + 1) * width, (i + 1) * height)
-#             a = im.crop(box)
-#             a.save(output_dir + "/" + img_name + str(i) + "-" + str(j) + file_extension)
-
-def stitch_subfolders(image_dir, output_dir):
+def stitch_subfolders(image_dir, output_dir, tomo=None):
     # create the output directory if needed
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
+    # print("stitch sub")
+    if tomo is None:
+        for dirname in os.listdir(image_dir):
+            dirpath = os.path.join(image_dir, dirname)
+            if not os.path.isdir(dirpath):
+                if dirpath.__contains__(".tif"):
+                    # if tomo is None:
+                    #     stitch(image_dir, output_dir)
+                    #     print("tomo not selected")
+                    # else:
+                    #     print("tomo selected")
+                    #     stitch_tomo(image_dir, output_dir)
+                # else:
+                    continue
 
-    for dirname in os.listdir(image_dir):
-        dirpath = os.path.join(image_dir, dirname)
-        if not os.path.isdir(dirpath):
-            continue
-
-        model_image_dir = dirpath
-        model_output_dir = os.path.join(output_dir, dirname)
-        print('model_image_dir:', model_image_dir)
-        print('model_output_dir:', model_output_dir)
-        stitch(model_image_dir, model_output_dir)
+            model_image_dir = dirpath
+            model_output_dir = os.path.join(output_dir, dirname)
+            print('model_image_dir:', model_image_dir)
+            print('model_output_dir:', model_output_dir)
+            # if tomo is None:
+            stitch(model_image_dir, model_output_dir)
+            # else:
+            #     print("tomo selected1", model_image_dir)
+            #     stitch_tomo(model_image_dir, model_output_dir)
+    else: # assume tomo doesnt use subfolders
+        stitch_tomo(image_dir, output_dir)
+            # print(tomo)
 
 
 def stitch(image_dir, output_dir):
@@ -78,12 +87,9 @@ def stitch(image_dir, output_dir):
         basename, ext = os.path.splitext(filename)
         bn_u = basename.split("_")
         img_name, xypos = "_".join(bn_u[:-1]), bn_u[-1]
-        # print(bn_u, xypos, xypos.split("-"))
-        # img_name = "_".join(bn_u[:-1])
         yTilePosl, xTilePosl = xypos.split("-")
         xTilePos = int("".join(xTilePosl))
         yTilePos = int("".join(yTilePosl))
-        # print('xTilePos:', xTilePos, type(xTilePoss), ' yTilePos:', yTilePos, type(yTilePoss), ' img_name:', img_name, flush=True)
         xTilePoss.append(xTilePos)
         yTilePoss.append(yTilePos)
         # i = 0
@@ -142,11 +148,9 @@ def stitch(image_dir, output_dir):
                     # The mode= "I;16" did not work; The mode "L" is good for 8 bit masks
                     # set the output image mode to the same as the input tile image mode
                     result = Image.new(mode=img.mode, size=(finalWidth, finalHeight))
-                    # TODO - why is it different in INFER tiling vs tiling.py
                     result.paste(img, (j * numcols, i * numrows))
                 else:
                     img = Image.open(filepath)
-                    # TODO - why is it different in INFER tiling vs tiling.py
                     result.paste(img, (j * numcols, i * numrows))
         if result is not None:
             # step 3: save the stitched image
@@ -159,10 +163,88 @@ def stitch(image_dir, output_dir):
             result.save(out_filepath)
 
 
+def stitch_tomo(image_dir, output_dir):
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
+    # example filename and its decomposition
+    # filename: pred_DEC_SizeVariation_xi000.011853_lambda000.336736_H0_6-3-4.tif
+    # zTilePos: 6 xTilePos: 4  yTilePos: 3  img_name: pred_DEC_SizeVariation_xi000.011853_lambda000.336736_H0
+
+    # step 1: decompose file names into sets of tiles that belong to the same mosaic image
+    # estimate the maximum number of horizontal and vertical tiles for each mosaic image
+    file_extension = 'tiff'
+    mosaic_image_array = []
+    max_xTilePos = []
+    max_yTilePos = []
+    max_zTilePos = []
+    mosaic_df = pd.DataFrame(columns=["mosaic_image_array", "z", "y", "x"])
+    maxz, maxy, maxx = -1, -1, -1
+    z_len, y_len, x_len = -1, -1, -1
+    dims = -1
+    xis = -1
+    for f, filename in enumerate(os.listdir(image_dir)):
+        filepath = os.path.join(image_dir, filename)
+        # print('filename:', filename, end="\t")
+        if not os.path.isfile(filepath):
+            continue
+        if f == 0:
+            temp_img = tifffile.imread(filepath)
+            dims = temp_img.ndim
+            print(f"DIMS = {dims}, SHAPE = {temp_img.shape}")
+            if dims == 3:
+                z_len, y_len, x_len = temp_img.shape
+            if dims == 4:
+                xis, z_len, y_len, x_len = temp_img.shape
+        # input filename: <name>-zPieces-yPieces-xPieces.suffix
+        # input filename: pred_well1.hrf48.red_1-0.tif
+        basename = re.split('_|\.', filename)
+        img_name = "_".join(basename[:-2])
+        # print("basename:", basename, end="\t")
+        indices = basename[-2]
+        z, y, x = indices.split('-')
+        z, y, x = int(z), int(y), int(x)
+        # print('zTilePos:', z, ' yTilePos:', y, 'xTilePos:', x, ' img_name:', img_name)
+        maxz = z if z > maxz else maxz
+        maxy = y if y > maxy else maxy
+        maxx = x if x > maxx else maxx
+        # mosaic_df.append({"mosaic_image_array": img_name, "z": z, "y": y, "x": x}, ignore_index=True)
+        temp_df = pd.DataFrame([{"mosaic_image_array": img_name, "z": z, "y": y, "x": x}])
+        mosaic_df = pd.concat([mosaic_df, temp_df], axis=0, ignore_index=True)
+        # mosaic_image_array.append(img_name)
+        # max_xTilePos.append(x)
+    # print("MOSAIC READY", mosaic_df["mosaic_image_array"])
+    # max_yTilePos.append(y)
+    # max_zTilePos.append(z)
+    for file in mosaic_df["mosaic_image_array"].unique():
+        print("\nFILE:", file, z_len, x_len, y_len)
+        # exit()
+        if dims == 3:
+            mosaic_image = np.zeros((z_len * (maxz + 1), y_len * (maxy + 1), x_len * (maxx + 1)), dtype=np.uint16)
+            print(mosaic_image.dtype)
+            for (k, i, j) in itertools.product(range(maxz + 1), range(maxy + 1), range(maxx + 1)):
+                filepath = f"{file}_{k}-{i}-{j}.{file_extension}"
+                image = tifffile.imread(os.path.join(image_dir, filepath))
+                print(mosaic_image.shape, image.shape, i, j, k, x_len, y_len, z_len)
+                mosaic_image[k * z_len:(k + 1) * z_len, i * y_len:(i + 1) * y_len, j * x_len:(j + 1) * x_len] = image
+            print(mosaic_image.dtype)
+            tifffile.imwrite(f"{os.path.join(output_dir, file)}.{file_extension}", data=mosaic_image, imagej=True)
+        if dims == 4:
+            mosaic_image = np.zeros((xis, z_len * (maxz + 1), y_len * (maxy + 1), x_len * (maxx + 1)), dtype=np.uint16)
+            for (k, i, j) in itertools.product(range(maxz + 1), range(maxx + 1), range(maxy + 1)):
+                filepath = f"{file}_{k}-{i}-{j}.{file_extension}"
+                image = tifffile.imread(os.path.join(image_dir, filepath))
+                print(mosaic_image.shape, image.shape, i, j, k, x_len, y_len, z_len)
+                mosaic_image[:, k * z_len:(k + 1) * z_len, i * y_len:(i + 1) * y_len, j * x_len:(j + 1) * x_len] = image
+            tifffile.imwrite(f"{os.path.join(output_dir, file)}.{file_extension}", data=mosaic_image, imagej=True)
+
+
 def main():
     parser = argparse.ArgumentParser(prog='stitch', description='Script that stitches tiled images')
     parser.add_argument('--image_dir', type=str, help='folder path to a set of sub-folders with input tiled images')
     parser.add_argument('--output_dir', type=str, help='folder path to saving output stitched images')
+    parser.add_argument('--tomo', type=str, nargs="+", help='folder path to saving output stitched images')
+
     # parser.add_argument('--xPieces', type=int, help='number of image cuts along x-axis')
     # parser.add_argument('--yPieces', type=int, help='number of image cuts along y-axis')
     args, unknown = parser.parse_known_args()
@@ -177,7 +259,10 @@ def main():
     # --image_dir /home/pnb/trainingOutput/pytorchOutput_A10/infer_test_images/ --output_dir /home/pnb/trainingOutput/pytorchOutput_A10/infer_stitch/
     # --image_dir /home/pnb/trainingOutput/pytorchOutput_cryoem/infer_test_images/ --output_dir /home/pnb/trainingOutput/pytorchOutput_cryoem/infer_stitch/
     # stitch(args.image_dir, args.output_dir)
-    stitch_subfolders(args.image_dir, args.output_dir)
+    print("TOMO:", args.tomo)
+    stitch_subfolders(args.image_dir, args.output_dir, args.tomo)
+
+    # stitch_subfolders(args.image_dir, args.output_dir)
 
 
 if __name__ == "__main__":

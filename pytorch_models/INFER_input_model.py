@@ -8,10 +8,9 @@ class INFERFeatureExtractor(torch.nn.Module):
     """
     This model is made for the purpose of using 3 dimensional data as inputs
     where the last 2 dimensions are X and Y axes of images.
-    TODO: add support for upto 5 dimensions.
 
-    concatenating with other publicly available models.
-    This model is not intented to be used on its own
+    It does so by concatenating with other publicly available models.
+    This model is not intended to be used on its own
 
     """
 
@@ -108,7 +107,6 @@ class CombinedModel(torch.nn.Module):
     """
     This model is made for the purpose of using 3 dimensional data as inputs
     where the last 2 dimensions are X and Y axes of images.
-    TODO: add support for upto 5 dimensions.
 
     concatenating with other publicly available models.
     This model is not intented to be used on its own
@@ -191,6 +189,94 @@ class LSTMModel(torch.nn.Module):
         return x
 
 
+class GRUModel(torch.nn.Module):  # TODO
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(GRUModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.input_size = input_size
+        self.num_classes = num_classes
+        self.num_layers = num_layers
+
+        self.gru = torch.nn.GRU(self.input_size, self.hidden_size, self.num_layers, batch_first=True)
+        # self.drop = torch.nn.Dropout()
+        # downsampling
+        self.down_conv = torch.nn.Conv2d(self.hidden_size, out_channels=16, kernel_size=3, padding=1, stride=2)
+        # upsampling
+        self.up_conv = torch.nn.ConvTranspose2d(in_channels=16, out_channels=self.hidden_size, kernel_size=22, stride=2)
+        self.direct_conv = torch.nn.Conv2d(self.hidden_size, self.num_classes, kernel_size=1, stride=1, padding='same')
+
+    def forward(self, x):
+        batchsize, xis, xs, ys = x.size()  # torch size not np
+        x = x.permute(0, 2, 3, 1)  # TODO x.view
+        x = x.reshape((batchsize, -1, xis))
+        x, hn = self.gru(x)  # xshape = (newbatchsize, xis, hiddensize)
+        x = x.permute(0, 2, 1)
+        x = x.reshape(batchsize, self.hidden_size, xs, ys)
+        downsampled = self.down_conv(x)
+        downsampled = torch.nn.functional.relu(downsampled)
+        downsampled = self.up_conv(downsampled)
+        direct = self.conv(x)
+        x = downsampled + direct
+        return x
+
+
+class GRU_3D_Model(torch.nn.Module):  # TODO
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(GRU_3D_Model, self).__init__()
+        self.hidden_size = hidden_size
+        self.input_size = input_size
+        self.num_classes = num_classes
+        self.num_layers = num_layers
+
+        self.gru = torch.nn.GRU(self.input_size, self.hidden_size, self.num_layers, batch_first=True)
+        # self.drop = torch.nn.Dropout()
+        # downsampling
+        self.down_conv = torch.nn.Conv3d(self.hidden_size, out_channels=16, kernel_size=3, padding=1, stride=2)
+        # upsampling
+        self.up_conv = torch.nn.ConvTranspose3d(in_channels=16, out_channels=self.hidden_size, kernel_size=6, stride=2,
+                                                padding=2)
+        self.direct_conv = torch.nn.Conv3d(self.hidden_size, self.hidden_size, kernel_size=1, stride=1, padding='same')
+        self.final_conv = torch.nn.Conv3d(self.hidden_size * 2, self.num_classes, kernel_size=1, stride=1,
+                                          padding='same')
+
+    def forward(self, x):
+        batchsize, xis, zs, xs, ys = x.size()  # torch size not np
+        # print(x.shape, flush=True)
+        # print(x)
+        # x = x.permute(0, 2, 3, 4, 1)  # TODO x.view
+        # print(x.shape, flush=True)
+        # print(x)
+        # exit()
+        x = x.view(batchsize, xis, -1)  # TODO x.view
+        x = x.permute(0, 2, 1)
+        # print(x.shape, flush=True)
+
+        # x = x.reshape((batchsize, -1, xis))
+        x, hn = self.gru(x)  # xshape = (newbatchsize, xis, hiddensize)
+        # x = x.reshape(batchsize, zs, xs, ys, self.hidden_size)
+        # print(x.shape, flush=True)
+        x = x.permute(0, 2, 1)  # bring back original order
+        x = x.reshape(batchsize, self.hidden_size, zs, xs, ys)
+        # x = x.permute(0, 2, 1)
+        # x = x.reshape(batchsize, self.hidden_size, xs, ys)
+        downsampled = self.down_conv(x)
+        downsampled = torch.nn.functional.relu(downsampled)
+        upsampled = self.up_conv(downsampled)
+        direct = self.direct_conv(x)
+        # print(upsampled.shape, direct.shape)
+        x = torch.cat([upsampled, direct], dim=1)
+        return x
+
+
+class TomographyModel(torch.nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super().__init__(TomographyModel, self).__init__()
+        self.output_layer = torch.nn.Linear()
+
+    def forward(self, x):
+        self.output_layer = torch.nn.Linear()
+
+
 class FCNModel(torch.nn.Module):
     def __init__(self):
         super(FCNModel, self).__init__()
@@ -229,13 +315,16 @@ if __name__ == "__main__":
     #
     outputchannels = 255
     input_channels = 168
-    image_shape = (input_channels, 2000, 2000)
+    image_shape = (input_channels, 2000, 2000, 2000)
     window = 200
     # infer_input_model = LSTMModel(input_size=input_channels, hidden_size=32, num_layers=2,
     #                               num_classes=outputchannels)
+    infer_input_model = GRU_3D_Model(input_size=input_channels, hidden_size=64, num_layers=2,
+                                     num_classes=outputchannels)
+
     # infer_input_model = INFERFeatureExtractor1D(input_channels=input_channels, output_channels=outputchannels)
-    infer_input_model = CombinedModel(input_channels, None, outputchannels, window_size=200, batchsize=80)
-    print(summaryX(infer_input_model, torch.zeros((80, 168, window, window))))
+    # infer_input_model = CombinedModel(input_channels, None, outputchannels, window_size=200, batchsize=80)
+    print(summaryX(infer_input_model, torch.zeros((80, 50, window, window, window))))
     # print(summary(infer_input_model, (252, window, window), batch_size=80))
     # preset_model = models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=outputchannels,
     #                                                       progress=True)
