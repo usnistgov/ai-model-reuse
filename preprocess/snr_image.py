@@ -21,15 +21,20 @@ __email__ = "peter.bajcsy@nist.gov"
 '''
 compute SNR for one image
 '''
+
+
 def snr_image(img, axis=0, ddof=0):
     img = np.asanyarray(img)
     m = img.mean(axis)
     sd = img.std(axis=axis, ddof=ddof)
-    return np.where(sd == 0, 0, m/sd)
+    return np.where(sd == 0, 0, m / sd)
+
 
 '''
 compute snr for all images in an image folder
 '''
+
+
 def folder_snr_image(image_folder, output_image_folder, dataset_name):
     image_folder = os.path.abspath(image_folder)
     image_files = [fn for fn in os.listdir(image_folder)]
@@ -57,7 +62,7 @@ def folder_snr_image(image_folder, output_image_folder, dataset_name):
 
         snr_val = snr_image(image, axis=None)
         print('INFO: image file name: ', fn, ' SNR: ', snr_val)
-        cv_val = 1.0/snr_val
+        cv_val = 1.0 / snr_val
         print('INFO: image file name: ', fn, ' CV: ', cv_val)
         dataset_arr.append(dataset_name)
         basename_arr.append(fn)
@@ -76,11 +81,13 @@ def folder_snr_image(image_folder, output_image_folder, dataset_name):
     print('INFO: processing time [s]: ', total_time)
     return snr_arr, cv_arr
 
+
 '''
 compute snr for all images in image folder and the statistics over all images
 '''
-def batch_snr_image(image_folder, mask_folder, output_image_folder, dataset_name):
 
+
+def batch_snr_image(image_folder, mask_folder, output_image_folder, dataset_name):
     # check that the output folder exists
     if not os.path.exists(output_image_folder):
         os.mkdir(output_image_folder)
@@ -98,14 +105,14 @@ def batch_snr_image(image_folder, mask_folder, output_image_folder, dataset_name
     cv_min_label = 'Min CV'
     cv_max_label = 'Max CV'
 
-    metrics_stats = pd.DataFrame(columns=[dataset_label, snr_avg_label, snr_stdev_label,snr_min_label,snr_max_label,
-                                          cv_avg_label,cv_stdev_label,cv_min_label,cv_max_label ])
+    metrics_stats = pd.DataFrame(columns=[dataset_label, snr_avg_label, snr_stdev_label, snr_min_label, snr_max_label,
+                                          cv_avg_label, cv_stdev_label, cv_min_label, cv_max_label])
     # create the output file only if it does not exist
     if not os.path.exists(out_csv_stats):
         metrics_stats.to_csv(out_csv_stats, mode='w', header=True, index=False)
     ##################################
     # TODO switch between snr types of computation
-    #snr_arr, cv_arr = folder_snr_image(image_folder, output_image_folder, dataset_name)
+    # snr_arr, cv_arr = folder_snr_image(image_folder, output_image_folder, dataset_name)
     snr_arr, cv_arr = folder_snr_rois_image(image_folder, mask_folder, output_image_folder, dataset_name)
 
     ##########################################
@@ -138,12 +145,15 @@ def batch_snr_image(image_folder, mask_folder, output_image_folder, dataset_name
     print(metrics_stats)
     metrics_stats.to_csv(out_csv_stats, mode='a', header=False, index=False)
 
+
 '''
 compute snr for all images over a mask (0 - bkg, other - frg) in an image folder
 '''
+
+
 def folder_snr_rois_image(image_folder, mask_folder, output_image_folder, dataset_name):
     image_folder = os.path.abspath(image_folder)
-    #image_files = [fn for fn in os.listdir(image_folder)]
+    # image_files = [fn for fn in os.listdir(image_folder)]
 
     mask_folder = os.path.abspath(mask_folder)
     mask_files = [fn_mask for fn_mask in os.listdir(mask_folder)]
@@ -166,7 +176,7 @@ def folder_snr_rois_image(image_folder, mask_folder, output_image_folder, datase
     for fn_mask in mask_files:
         image_file = os.path.join(image_folder, fn_mask)
         mask_file = os.path.join(mask_folder, fn_mask)
-        #basename = fn_mask.rsplit('.', 1)  # split on the last occurrence of the delimiter
+        # basename = fn_mask.rsplit('.', 1)  # split on the last occurrence of the delimiter
 
         if os.path.isfile(image_file) and os.path.isfile(mask_file):
             image_file = os.path.join(image_folder, fn_mask)
@@ -174,7 +184,7 @@ def folder_snr_rois_image(image_folder, mask_folder, output_image_folder, datase
             mask_file = os.path.join(mask_folder, fn_mask)
             mask = skimage.io.imread(fname=mask_file)
 
-            #image = np.asarray(Image.open(mask_file))
+            # image = np.asarray(Image.open(mask_file))
             if mask.shape[0] != image.shape[0] or mask.shape[1] != image.shape[1]:
                 print('ERROR: mismatch of mask and image sizes')
                 print('image size:', image.shape[0], ',', image.shape[1])
@@ -191,23 +201,22 @@ def folder_snr_rois_image(image_folder, mask_folder, output_image_folder, datase
                         count_signal += 1
                     else:
                         sum_noise += image[h][w]
-                        sum2_noise += np.float64(image[h][w]*image[h][w])
+                        sum2_noise += np.float64(image[h][w] * image[h][w])
                         count_noise += 1
 
-
             if count_signal > 0:
-                mean_signal = sum_signal/count_signal
+                mean_signal = sum_signal / count_signal
             else:
                 mean_signal = 0.0
 
             if count_noise > 0:
-                sum_noise = sum_noise/count_noise
-                stdev_noise = np.sqrt(sum2_noise/count_noise + sum_noise*sum_noise)
+                sum_noise = sum_noise / count_noise
+                stdev_noise = np.sqrt(sum2_noise / count_noise + sum_noise * sum_noise)
             else:
                 stdev_noise = 0.0
 
             if stdev_noise > 0.0:
-                snr_val = mean_signal/stdev_noise
+                snr_val = mean_signal / stdev_noise
                 cv_val = 1.0 / snr_val
             else:
                 snr_val = 0.0
@@ -233,7 +242,6 @@ def folder_snr_rois_image(image_folder, mask_folder, output_image_folder, datase
     return snr_arr, cv_arr
 
 
-
 def main():
     parser = argparse.ArgumentParser(prog='SNR', description='Script that computes SNR value per image and per ROI')
     parser.add_argument('--image_dir', type=str, help='full path of image folder')
@@ -257,9 +265,9 @@ def main():
         return
 
     dataset_label = args.name_dataset
-    #batch_snr_image(args.image_dir, args.output_dir, dataset_label)
+    # batch_snr_image(args.image_dir, args.output_dir, dataset_label)
     batch_snr_image(args.image_dir, args.mask_dir, args.output_dir, dataset_label)
+
 
 if __name__ == "__main__":
     main()
-

@@ -440,8 +440,6 @@ if __name__ == "__main__":
     except Exception as renameerr:
         print(renameerr)
         exit()
-    # print(dataF)
-    # exit()
     if calcmetrics:
         get_stability(dataF, use_best=True, metric="crossentropy", annotate_best_points=False,
                       annotate_stability_stats=True)
