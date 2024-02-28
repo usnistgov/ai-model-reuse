@@ -185,13 +185,13 @@ def combine_subfolders(image_dir, output_dir, xPieces, yPieces, zPieces=None, us
 
 def main():
     parser = argparse.ArgumentParser(prog='split', description='Script that combines and tiles data')
-    parser.add_argument('--image_dir', type=str, help='folder path to input images')
-    parser.add_argument('--output_dir', type=str, help='folder path to saving output tiles')
-    parser.add_argument('--channels', type=str, nargs='+', help='example input: ["H1dark"]', required=False,
+    parser.add_argument('-i','--image_dir', type=str, help='folder path to input images')
+    parser.add_argument('-o','--output_dir', type=str, help='folder path to saving output tiles')
+    parser.add_argument('-c','--channels', type=str, nargs='+', help='example input: ["H1dark"]', required=False,
                         default=None)
-    parser.add_argument('--xPieces', type=int, help='number of image cuts along x-axis')
-    parser.add_argument('--yPieces', type=int, help='number of image cuts along y-axis')
-    parser.add_argument('--zPieces', type=int, help='number of image cuts along y-axis')
+    parser.add_argument('-x','--xPieces', type=int, help='number of image cuts along x-axis')
+    parser.add_argument('-y','--yPieces', type=int, help='number of image cuts along y-axis')
+    parser.add_argument('-z','--zPieces', type=int, help='number of image cuts along y-axis')
     args, unknown = parser.parse_known_args()
     print("CHANNELS\t", args.channels)
     if args.image_dir is None:

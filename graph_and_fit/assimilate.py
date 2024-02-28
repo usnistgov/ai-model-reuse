@@ -7,7 +7,9 @@ import os
 import pandas as pd
 
 # calculation_types = [None, "inference_opposite_Evaluated", "infer_tile_images"]
-calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "training"]
+# calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "training"]
+calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "infer_tile_images_orig",
+                     "training"]
 # calculation_types = ["inference_opposite_Evaluated_cumulative", "infer_tile_images_cumulative", "training"]
 # calculation_types = ["training"]
 
@@ -148,7 +150,8 @@ if __name__ == "__main__":
     #     print('ERROR: missing input mask folder ')
     # foldernames = args.foldernames
     # model_cstring = args.substring
-    folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS/25/"
+    # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS/25/"
+    folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS_size/5_1/"
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD34/MeasuredTrain"
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/CG1D_PS_comparechannels"
     foldernames = [

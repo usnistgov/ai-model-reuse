@@ -358,6 +358,10 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
         seconds = int(seconds)
         batchsummary['Seconds'] = seconds
         print(batchsummary)
+        if min_dice > epoch_dice:
+            tol = epoch
+            min_dice = epoch_dice
+
         with open(os.path.join(bpath, metrics_name), 'a', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow(batchsummary)

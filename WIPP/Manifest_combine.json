@@ -1,0 +1,90 @@
+{
+    "name": "INFER combine tile plugin",
+    "version": "0.0.1",
+    "title": "INFER combine stack plugin",
+    "description": "Plugin for combining INFER images into stacks ",
+    "author": "Pushkar Sathe",
+    "institution": "National Institution of Standards and Technology",
+    "repository": "https://github.com/usnistgov/ai-model-reuse",
+    "website": "https://isg.nist.gov/deepzoomweb/data/inferSegmentation",
+    "citation": "",
+    "containerId": "wipp/infer-ai-training:0.0.1",
+    "baseCommand": [
+        "python combine_and_tile.py"
+    ],
+    "inputs": [
+        {
+            "name": "i",
+            "type": "collection",
+            "description": "Folder containing intensity images to be combined and tiled",
+            "required": true
+        },
+        {
+            "name": "c",
+            "type": "enum",
+            "description": "image modes or their combinations",
+            "required": true,
+            "options": {
+                "values": [
+                    "H0",
+                    "H1",
+                    "H1dark",
+                    "H0 H1",
+                    "H0 H1dark",
+                    "H1 H1dark",
+                    "H0 H1 H1dark"
+                ]
+            }
+        },
+        {
+            "name": "x",
+            "type": "integer",
+            "description": "number of pieces along x axis",
+            "required": true
+        },
+        {
+            "name": "y",
+            "type": "integer",
+            "description": "number of pieces along y axis",
+            "required": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "o",
+            "type": "collection",
+            "description": "Folder containing combined and tiled files"
+        }
+    ],
+    "ui": [
+        {
+            "key": "inputs.i",
+            "title": "Input images",
+            "description": "Choose folder containing images to be combined and tiled",
+            "hidden": false
+        },
+        {
+            "key": "inputs.c",
+            "title": "Select image modes",
+            "description": "image modes or their combinations",
+            "hidden": false
+        },
+        {
+            "key": "inputs.x",
+            "title": "Pieces along x axis",
+            "description": "choose number of pieces along x axis",
+            "hidden": false
+        },
+        {
+            "key": "inputs.y",
+            "title": "Pieces along y axis",
+            "description": "choose number of pieces along y axis",
+            "hidden": false
+        }
+    ],
+    "resourceRequirements": {
+        "cpuAVX": false,
+        "cpuAVX2": false,
+        "gpu": false
+    }
+}

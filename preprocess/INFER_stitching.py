@@ -42,16 +42,16 @@ def stitch_subfolders(image_dir, output_dir, tomo=None):
                     #     stitch_tomo(image_dir, output_dir)
                 # else:
                     continue
-
-            model_image_dir = dirpath
-            model_output_dir = os.path.join(output_dir, dirname)
-            print('model_image_dir:', model_image_dir)
-            print('model_output_dir:', model_output_dir)
-            # if tomo is None:
-            stitch(model_image_dir, model_output_dir)
-            # else:
-            #     print("tomo selected1", model_image_dir)
-            #     stitch_tomo(model_image_dir, model_output_dir)
+            else:
+                model_image_dir = dirpath
+                model_output_dir = os.path.join(output_dir, dirname)
+                print('model_image_dir:', model_image_dir)
+                print('model_output_dir:', model_output_dir)
+                # if tomo is None:
+                stitch(model_image_dir, model_output_dir)
+                # else:
+                #     print("tomo selected1", model_image_dir)
+                #     stitch_tomo(model_image_dir, model_output_dir)
     else: # assume tomo doesnt use subfolders
         stitch_tomo(image_dir, output_dir)
             # print(tomo)

@@ -116,11 +116,11 @@ def tile(image_dir_or_file, output_dir, xPieces, yPieces, zPieces=None):
 
 def main():
     parser = argparse.ArgumentParser(prog='split', description='Script that tiles data')
-    parser.add_argument('--image_dir', type=str, help='folder path to input images')
-    parser.add_argument('--output_dir', type=str, help='folder path to saving output tiles')
-    parser.add_argument('--xPieces', type=int, help='number of image cuts along x-axis')
-    parser.add_argument('--yPieces', type=int, help='number of image cuts along y-axis')
-    parser.add_argument('--zPieces', type=int, help='number of image cuts along y-axis', default=None)
+    parser.add_argument('-i', '--image_dir', type=str, help='folder path to input images')
+    parser.add_argument('-o', '--output_dir', type=str, help='folder path to saving output tiles')
+    parser.add_argument('-x', '--xPieces', type=int, help='number of image cuts along x-axis')
+    parser.add_argument('-y', '--yPieces', type=int, help='number of image cuts along y-axis')
+    parser.add_argument('-z', '--zPieces', type=int, help='number of image cuts along y-axis')
     args, unknown = parser.parse_known_args()
 
     if args.image_dir is None:

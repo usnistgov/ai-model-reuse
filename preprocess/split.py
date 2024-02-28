@@ -19,7 +19,8 @@ according to the split fraction
 """
 
 
-def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test_image_folder, test_mask_folder, fraction):
+def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test_image_folder, test_mask_folder,
+          fraction):
     image_folder = os.path.abspath(image_folder)
     mask_folder = os.path.abspath(mask_folder)
     img_files = [f for f in os.listdir(mask_folder)]
@@ -53,13 +54,13 @@ def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test
 
 def main():
     parser = argparse.ArgumentParser(prog='split', description='Script that splits data')
-    parser.add_argument('--image_dir', type=str)  # full path of image folder
-    parser.add_argument('--mask_dir', type=str)  # full path of mask folder
-    parser.add_argument('--train_image_dir', type=str)  # full path of train image folder destination
-    parser.add_argument('--test_image_dir', type=str)  # full path of test image folder destination
-    parser.add_argument('--train_mask_dir', type=str)  # full path of train mask folder destination
-    parser.add_argument('--test_mask_dir', type=str)  # full path of test mask folder destination
-    parser.add_argument('--fraction', type=float)
+    parser.add_argument('-i', '--image_dir', type=str)  # full path of image folder
+    parser.add_argument('-m', '--mask_dir', type=str)  # full path of mask folder
+    parser.add_argument('-tri', '--train_image_dir', type=str)  # full path of train image folder destination
+    parser.add_argument('-tei', '--test_image_dir', type=str)  # full path of test image folder destination
+    parser.add_argument('-trm', '--train_mask_dir', type=str)  # full path of train mask folder destination
+    parser.add_argument('-tem', '--test_mask_dir', type=str)  # full path of test mask folder destination
+    parser.add_argument('-f', '--fraction', type=float)
     args, unknown = parser.parse_known_args()
 
     if args.image_dir is None:
