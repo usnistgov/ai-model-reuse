@@ -18,15 +18,16 @@ This class will collect information about GPU utilization
 
 
 def write_header(output_filename):
-    fieldnames = ['Epoch', 'Time stamp', 'ID', 'Name', 'Serial', 'UUID', 'GPU temp. [C]', 'GPU util. [%]', 'Memory util. [%]',
-                  'Memory total [MB]', 'Memory used [MB]', 'Memory free [MB]', 'Display mode', 'Display active']
+    fieldnames = ['Epoch', 'Time stamp', 'ID', 'Name', 'Serial', 'UUID', 'GPU temp. [C]', 'GPU util. [%]',
+                  'Memory util. [%]', 'Memory total [MB]', 'Memory used [MB]', 'Memory free [MB]', 'Display mode',
+                  'Display active']
     with open(output_filename, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
 
 def record(epoch, output_filename):
-    #out_name, out_file_extension = os.path.splitext(output_filename)
+    # out_name, out_file_extension = os.path.splitext(output_filename)
     output_dir = os.path.dirname(output_filename)
 
     if not os.path.exists(output_dir):
@@ -56,12 +57,11 @@ def record(epoch, output_filename):
                 [{'attr': 'display_mode', 'name': 'Display mode'},
                  {'attr': 'display_active', 'name': 'Display active'}]]
 
-
     # store the date_time as teh first entry in the recorded row
     store_gpu_info = str(epoch) + ',' + date_time
 
     for attrGroup in attrList:
-        #print('INFO: attrGroup:', attrGroup)
+        # print('INFO: attrGroup:', attrGroup)
 
         index = 1
         for attrDict in attrGroup:
@@ -73,22 +73,22 @@ def record(epoch, output_filename):
 
                 attr = attrTransform(attr)
 
-                if (isinstance(attr, float)):
+                if isinstance(attr, float):
                     attrStr = ('{0:' + attrPrecision + 'f}').format(attr)
-                elif (isinstance(attr, int)):
+                elif isinstance(attr, int):
                     attrStr = ('{0:d}').format(attr)
-                elif (isinstance(attr, str)):
+                elif isinstance(attr, str):
                     attrStr = attr;
-                elif (sys.version_info[0] == 2):
-                    if (isinstance(attr, unicode)):
+                elif sys.version_info[0] == 2:
+                    if isinstance(attr, unicode):
                         attrStr = attr.encode('ascii', 'ignore')
                 else:
                     raise TypeError(
                         'Unhandled object type (' + str(type(attr)) + ') for attribute \'' + attrDict['name'] + '\'')
 
-                #print('INFO: attrStr ', attrStr)
+                # print('INFO: attrStr ', attrStr)
                 store_gpu_info += ',' + attrStr
-                index +=1
+                index += 1
 
     store_gpu_info += '\n'
     print('row data:', store_gpu_info)
@@ -97,7 +97,8 @@ def record(epoch, output_filename):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='record gpu utilization', description='Script that collects information about GPU utilization')
+    parser = argparse.ArgumentParser(prog='record gpu utilization',
+                                     description='Script that collects information about GPU utilization')
     parser.add_argument('--output_filename', type=str, help='filename for saving output statistics')
     args, unknown = parser.parse_known_args()
 
@@ -113,6 +114,7 @@ def main():
     record(3, args.output_filename)
     time.sleep(3)
     record(4, args.output_filename)
+
 
 if __name__ == "__main__":
     main()

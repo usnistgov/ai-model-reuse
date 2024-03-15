@@ -11,11 +11,14 @@ from torchvision.datasets.vision import VisionDataset
 import skimage
 import skimage.io
 import torch
+
+
 class SegmentationDataset(VisionDataset):
     """A PyTorch dataset for image segmentation task.
     The dataset is compatible with torchvision transforms.
     The transforms passed would be applied to both the Images and Masks.
     """
+
     def __init__(self,
                  root: str,
                  train_image_folder: str,
@@ -28,7 +31,7 @@ class SegmentationDataset(VisionDataset):
                  subset: str = None,
                  image_color_mode: str = "rgb",
                  mask_color_mode: str = "grayscale",
-                 n_classes = 4) -> None:
+                 n_classes=4) -> None:
 
         super().__init__(root, transforms)
         train_image_folder_path = Path(self.root) / train_image_folder
@@ -61,7 +64,7 @@ class SegmentationDataset(VisionDataset):
             #                 weights[value] += 1
 
             self.weights = weights
-#
+        #
         else:
             self.image_names = self.test_image_names
             self.mask_names = self.test_mask_names
@@ -99,7 +102,7 @@ class SegmentationDataset(VisionDataset):
         sample = {"image": image, "mask": mask}
 
         # format the image into a tensor
-        #image= self.format_image(image) # no need to re-order channels!!
+        # image= self.format_image(image) # no need to re-order channels!!
         image = self.zscore_normalize(image)
         sample['image'] = torch.from_numpy(image)
 
@@ -110,10 +113,9 @@ class SegmentationDataset(VisionDataset):
         #     sample['image'] = sample['image'] / 255
         #     sample['image'] = torch.from_numpy(image)
 
-        if(mask.dtype != "uint8" or mask.dtype != "int8"):
+        if (mask.dtype != "uint8" or mask.dtype != "int8"):
             mask = mask.astype('uint8')
 
         mask_tensor = torch.from_numpy(mask)
         sample['mask'] = mask_tensor
         return sample
-

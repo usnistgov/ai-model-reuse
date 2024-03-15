@@ -6,7 +6,6 @@ from PIL import Image
 import os
 import argparse
 
-
 """
 This class will stitch tiles in the input folder into a mosaic of tiles saved as one image in the output folder.
 
@@ -36,7 +35,6 @@ def stitch_subfolders(image_dir, output_dir):
         print('model_image_dir:', model_image_dir)
         print('model_output_dir:', model_output_dir)
         stitch(model_image_dir, model_output_dir)
-
 
 
 def stitch(image_dir, output_dir):
@@ -133,12 +131,14 @@ def stitch(image_dir, output_dir):
 
                 if finalWidth == -1 or finalHeight == -1:
                     # check the last tile for an odd size due to tiling algorithm
-                    lasttile_filename = file + str(int(max_yTilePos[k])) + "-" + str(int(max_xTilePos[k])) + "." + file_extension
+                    lasttile_filename = file + str(int(max_yTilePos[k])) + "-" + str(
+                        int(max_xTilePos[k])) + "." + file_extension
                     lasttile_filepath = os.path.join(image_dir, lasttile_filename)
                     print('lasttile_filepath:', lasttile_filepath)
                     img = Image.open(lasttile_filepath)
                     lasttile_numcols, lasttile_numrows = img.size
-                    print("INFO: last tile dim: %s: %s, %s x %s" % (filepath, img.mode, lasttile_numcols, lasttile_numrows))
+                    print("INFO: last tile dim: %s: %s, %s x %s" % (
+                    filepath, img.mode, lasttile_numcols, lasttile_numrows))
 
                     # init the final mosaic image
                     img = Image.open(filepath)

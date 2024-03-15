@@ -33,6 +33,7 @@ def count_int_digits(n):
 
 def imgcrop(input, xPieces, yPieces, img_name, output_dir):
     im = Image.open(input)
+    print(f"shape:{im.size}")
     img_name, file_extension = os.path.splitext(img_name)
     imgwidth, imgheight = im.size
     height = imgheight // yPieces
@@ -51,7 +52,8 @@ def imgcrop(input, xPieces, yPieces, img_name, output_dir):
 def imgcrop_tomo(input, xPieces, yPieces, zPieces, img_name, output_dir):
     im = tifffile.tifffile.imread(input)
     im2 = Image.open(input)
-    print("Image.open: ", im.shape, "tifffile.imread: ", im2.size)
+    print("tomo shape ", im.shape)
+    # print("Image.open: ", im2.size)
     img_name, file_extension = os.path.splitext(img_name)
     dims = im.ndim
     if dims == 3:
