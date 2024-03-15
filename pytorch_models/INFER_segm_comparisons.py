@@ -189,7 +189,6 @@ def metrics_masks(gt_file_name, pred_mask, gt_mask, num_classes, output_dir):
 def get_pair_confusion_matrix(labels_true, labels_pred):
     CM = pair_confusion_matrix(labels_true, labels_pred)
     CM = CM.astype(np.uint16)
-    # tn, fp, fn, tp = get_tfpn(CM)
     return CM
 
 
