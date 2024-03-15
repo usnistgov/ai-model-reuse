@@ -15,5 +15,6 @@ scikit_image
 scikit_learn
 scipy
 seaborn
+imagecodecs
 tifffile
 tqdm

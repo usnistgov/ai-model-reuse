@@ -1,6 +1,6 @@
 {
     "name": "Data split plugin",
-    "version": "0.0.1",
+    "version": "0.0.5",
     "title": "data split plugin",
     "description": "Plugin for combining INFER images into stacks ",
     "author": "Pushkar Sathe",
@@ -8,9 +8,10 @@
     "repository": "https://github.com/usnistgov/ai-model-reuse",
     "website": "https://isg.nist.gov/deepzoomweb/data/inferSegmentation",
     "citation": "",
-    "containerId": "wipp/infer-ai-training:0.0.1",
+    "containerId": "wipp/infer-ai-training:0.0.7",
     "baseCommand": [
-        "python split.py"
+        "python",
+        "preprocess/split.py"
     ],
     "inputs": [
         {
@@ -34,22 +35,22 @@
     ],
     "outputs": [
         {
-            "name": "tri",
+            "name": "trainImageDir",
             "type": "collection",
             "description": "Folder containing training images"
         },
         {
-            "name": "tei",
+            "name": "testImageDir",
             "type": "collection",
             "description": "Folder containing validation images"
         },
         {
-            "name": "trm",
+            "name": "trainMaskDir",
             "type": "collection",
             "description": "Folder containing training masks"
         },
         {
-            "name": "tem",
+            "name": "testMaskDir",
             "type": "collection",
             "description": "Folder containing validation masks"
         }

@@ -1,0 +1,202 @@
+{
+    "name": "INFER model training plugin",
+    "version": "0.0.1",
+    "title": "INFER model training plugin",
+    "description": "Plugin for training an AI model on INFER data",
+    "author": "Pushkar Sathe",
+    "institution": "National Institution of Standards and Technology",
+    "repository": "https://github.com/usnistgov/ai-model-reuse",
+    "website": "https://isg.nist.gov/deepzoomweb/data/inferSegmentation",
+    "citation": "",
+    "containerId": "wipp/infer-ai-training:0.0.7",
+    "baseCommand": [
+        "pytorch_models/INFER_train.py"
+    ],
+    "inputs": [
+        {
+            "name": "data",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "trainImages",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "trainMasks",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "testImages",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "testMasks",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "epochs",
+            "type": "integer",
+            "required": true
+        },
+        {
+            "name": "modelWeights",
+            "type": "genericData",
+            "description": ".pt files",
+            "required": true
+        },
+        {
+            "name": "devicetype",
+            "type": "enum",
+            "required": true,
+            "options": {
+                "values": [
+                    "cpu",
+                    "gpu"
+                ]
+            }
+        },
+        {
+            "name": "batchsize",
+            "type": "integer",
+            "required": true
+        },
+        {
+            "name": "learningRate",
+            "type": "number",
+            "required": true
+        },
+        {
+            "name": "metricsfile",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "modelName",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "pretrained",
+            "type": "boolean",
+            "required": true
+        },
+        {
+            "name": "classes",
+            "type": "integer",
+            "required": true
+        },
+        {
+            "name": "inputchannels",
+            "type": "integer",
+            "required": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "outputDir",
+            "type": "collection",
+            "description": "Path to outputdir?"
+        }
+    ],
+    "ui": [
+        {
+            "key": "inputs.data",
+            "title": "parent directory",
+            "description": "This is the FULL PATH of the directory containing the images and masks",
+            "hidden": false
+        },
+        {
+            "key": "inputs.trainImages",
+            "title": "training images folder",
+            "description": "name of the folder that contains the images in the data directory",
+            "hidden": false
+        },
+        {
+            "key": "inputs.trainMasks",
+            "title": "training masks folder",
+            "description": "Name of the folder that contains the masks in the data directory",
+            "hidden": false
+        },
+        {
+            "key": "inputs.testImages",
+            "title": "validation images folder",
+            "description": "Name of the folder that contains the test images in the data directory",
+            "hidden": false
+        },
+        {
+            "key": "inputs.testMasks",
+            "title": "validation masks folder",
+            "description": "Name of the folder that contains the validation masks in the data directory",
+            "hidden": false
+        },
+        {
+            "key": "inputs.epochs",
+            "title": "Number of epochs",
+            "hidden": false
+        },
+        {
+            "key": "inputs.modelWeights",
+            "title": "model weights file",
+            "description": "choose a file containing model weights (*.pt)",
+            "hidden": false
+        },
+        {
+            "key": "inputs.devicetype",
+            "title": "Device Type",
+            "description": "cpu or gpu",
+            "hidden": false
+        },
+        {
+            "key": "inputs.batchsize",
+            "title": "batch size",
+            "description": "select batch size (e.g. 20, 40, 80..)",
+            "hidden": false
+        },
+        {
+            "key": "inputs.learningRate",
+            "title": "learning rate",
+            "description": "input a learning rate value",
+            "hidden": false
+        },
+        {
+            "key": "inputs.metricsfile",
+            "title": "metric filename",
+            "description": "name for file used to save metrics",
+            "hidden": false
+        },
+        {
+            "key": "inputs.modelName",
+            "title": "Model Name",
+            "description": "name of model to be used ( e.g. Deeplab50) ",
+            "hidden": false
+        },
+        {
+            "key": "inputs.pretrained",
+            "title": "pretraining state",
+            "description": "True or False",
+            "hidden": false
+        },
+        {
+            "key": "inputs.classes",
+            "title": "number of classes",
+            "description": "Empty classes are also handled",
+            "hidden": false
+        },
+        {
+            "key": "inputs.inputchannels",
+            "title": "number of input channels",
+            "description": "input channels for INFER models ( usually Xis * image-modes)",
+            "hidden": false
+        }
+    ],
+    "resourceRequirements": {
+        "cpuAVX": false,
+        "cpuAVX2": false,
+        "gpu": false
+    }
+}

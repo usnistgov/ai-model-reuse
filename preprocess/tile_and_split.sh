@@ -20,5 +20,5 @@ python tiling.py --image_dir=${root_folder}"/"${image_input_folder}  --output_di
 
 python tiling.py --image_dir=${root_folder}"/"${mask_input_folder}  --output_dir=${root_folder}"/tiled_masks" --xPieces=${xPieces} --yPieces=${yPieces}
 
-python split.py --image_dir ${root_folder}"/tiled_images" --mask_dir ${root_folder}"/tiled_masks" --train_image_dir=${root_folder}"/train_images" --train_mask_dir=${root_folder}"/train_masks" --test_image_dir=${root_folder}"/test_images" --test_mask_dir=${root_folder}"/test_masks" --fraction 0.8
+python split.py --image_dir=${root_folder}"/"${ch}"/tiled_images" --mask_dir=${root_folder}"/"${ch}"/tiled_masks" --trainImageDir=${root_folder}"/"${ch}"/train_images" --trainMaskDir=${root_folder}"/"${ch}"/train_masks" --testImageDir=${root_folder}"/"${ch}"/test_images" --testMaskDir=${root_folder}"/"${ch}"/test_masks" --fraction 0.8
 

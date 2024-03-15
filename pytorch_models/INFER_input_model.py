@@ -232,9 +232,10 @@ class GRU_3D_Model(torch.nn.Module):  # TODO
         # self.drop = torch.nn.Dropout()
         # downsampling
         self.down_conv = torch.nn.Conv3d(self.hidden_size, out_channels=16, kernel_size=3, padding=1, stride=2)
-        # upsampling
+        # upsampling - the padding = 1 for odd dimensions. So it might be best to have all even dimensions.
         self.up_conv = torch.nn.ConvTranspose3d(in_channels=16, out_channels=self.hidden_size, kernel_size=6, stride=2,
                                                 padding=2)
+
         self.direct_conv = torch.nn.Conv3d(self.hidden_size, self.hidden_size, kernel_size=1, stride=1, padding='same')
         self.final_conv = torch.nn.Conv3d(self.hidden_size * 2, self.num_classes, kernel_size=1, stride=1,
                                           padding='same')
@@ -263,7 +264,8 @@ class GRU_3D_Model(torch.nn.Module):  # TODO
         downsampled = torch.nn.functional.relu(downsampled)
         upsampled = self.up_conv(downsampled)
         direct = self.direct_conv(x)
-        # print(upsampled.shape, direct.shape)
+        # print(upsampled.shape, direct.shape, downsampled.shape)
+        # print(batchsize, xis, zs, xs, ys)
         x = torch.cat([upsampled, direct], dim=1)
         return x
 

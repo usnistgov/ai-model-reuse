@@ -1,0 +1,79 @@
+{
+    "name": "INFER model inference plugin",
+    "version": "0.0.1",
+    "title": "INFER model training plugin",
+    "description": "Plugin for training an AI model on INFER data",
+    "author": "Pushkar Sathe",
+    "institution": "National Institution of Standards and Technology",
+    "repository": "https://github.com/usnistgov/ai-model-reuse",
+    "website": "https://isg.nist.gov/deepzoomweb/data/inferSegmentation",
+    "citation": "",
+    "containerId": "wipp/infer-ai-training:0.0.7",
+    "baseCommand": [
+        "pytorch_models/INFER_inference.py"
+    ],
+    "inputs": [
+        {
+            "name": "modelFilepath",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "imageDirpath",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "maskDirpath",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "maskNumClasses",
+            "type": "integer",
+            "required": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "outputDirpath",
+            "type": "collection",
+            "description": "Path to outputdir"
+        }
+    ],
+    "ui": [
+        {
+            "key": "inputs.modelFilepath",
+            "title": "Model file path",
+            "description": "path to pytorch model weights file",
+            "hidden": false
+        },
+        {
+            "key": "inputs.imageDirpath",
+            "title": "Full path of images",
+            "description": "Path to images to be inferenced",
+            "hidden": false
+        },
+        {
+            "key": "inputs.maskDirpath",
+            "title": "Mask directory path",
+            "description": "full path to mask directory",
+            "hidden": false
+        },
+        {
+            "key": "inputs.maskNumClasses",
+            "title": "Number of classes in Mask",
+            "description": "Number of classes in ground truth mask",
+            "hidden": false
+        }
+    ],
+    "resourceRequirements": {
+        "cpuAVX": false,
+        "cpuAVX2": false,
+        "gpu": true,
+        "cudaRequirements": {
+            "deviceMemoryMin": 0,
+            "cudaComputeCapability": null
+        }
+    }
+}

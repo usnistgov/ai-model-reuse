@@ -54,21 +54,22 @@ def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test
 
 def main():
     parser = argparse.ArgumentParser(prog='split', description='Script that splits data')
-    parser.add_argument('-i', '--image_dir', type=str)  # full path of image folder
-    parser.add_argument('-m', '--mask_dir', type=str)  # full path of mask folder
-    parser.add_argument('-tri', '--train_image_dir', type=str)  # full path of train image folder destination
-    parser.add_argument('-tei', '--test_image_dir', type=str)  # full path of test image folder destination
-    parser.add_argument('-trm', '--train_mask_dir', type=str)  # full path of train mask folder destination
-    parser.add_argument('-tem', '--test_mask_dir', type=str)  # full path of test mask folder destination
-    parser.add_argument('-f', '--fraction', type=float)
+    parser.add_argument('-i', '--image_dir', type=str, help="full path of image folder")  #
+    parser.add_argument('-m', '--mask_dir', type=str, help="full path of mask folder")
+    parser.add_argument('-f', '--fraction', type=float, help="fraction in train")
+    parser.add_argument('-tri', '--trainImageDir', type=str, help="full path of train image folder destination")
+    parser.add_argument('-tei', '--testImageDir', type=str, help="full path of test image folder destination")
+    parser.add_argument('-trm', '--trainMaskDir', type=str, help="full path of train mask folder destination")
+    parser.add_argument('-tem', '--testMaskDir', type=str, help="full path of test mask folder destination")
     args, unknown = parser.parse_known_args()
 
     if args.image_dir is None:
         print('ERROR: missing input image folder ')
         return
-
-    split(args.image_dir, args.mask_dir, args.train_image_dir, args.train_mask_dir,
-          args.test_image_dir, args.test_mask_dir, args.fraction)
+    # print(args)
+    # print(unknown)
+    split(args.image_dir, args.mask_dir, args.trainImageDir, args.trainMaskDir,
+          args.testImageDir, args.testMaskDir, args.fraction)
 
 
 if __name__ == "__main__":

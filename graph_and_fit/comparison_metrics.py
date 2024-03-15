@@ -18,12 +18,12 @@ __author__      = "Peter Bajcsy"
 __email__ = "peter.bajcsy@nist.gov"
 '''
 
-
 '''
 This is the main routine for computing comparison metrics
 '''
-def compute_comparison_metrics(in_path, out_path):
 
+
+def compute_comparison_metrics(in_path, out_path):
     # Check whether the specified output path exists or not
     doesExist = os.path.exists(out_path)
     if not doesExist:
@@ -52,10 +52,13 @@ def compute_comparison_metrics(in_path, out_path):
     data_compatibility_pretrain_label = 'Data-compatibility-pretrain: Sum of deltas equal to CE loss wihout and with pretrain for deltas > 0 (max value: best)'
 
     metrics_list = pd.DataFrame(columns=[basename_label, accuracy_mintestloss_label, accuracy_maxstability_label,
-                                         training_timemintestloss_label, training_time100epochs_label, training_predictPowerF_P10_label,
-                                         training_predictPowerF_P20_label, training_predictExpF_P10_label, training_predictExpF_P20_label,
+                                         training_timemintestloss_label, training_time100epochs_label,
+                                         training_predictPowerF_P10_label,
+                                         training_predictPowerF_P20_label, training_predictExpF_P10_label,
+                                         training_predictExpF_P20_label,
                                          data_uniformity_label, data_compatibility_model_label,
-                                         data_compatibility_pretrain_label, training_initgain_testloss_label, training_initgain_time_label])
+                                         data_compatibility_pretrain_label, training_initgain_testloss_label,
+                                         training_initgain_time_label])
     metrics_list.to_csv(output_metrics_file, mode='w', header=True, index=False)
 
     csv_folder = os.path.abspath(in_path)
@@ -86,7 +89,6 @@ def compute_comparison_metrics(in_path, out_path):
         print('INFO: fname:', fname)
         basename = os.path.basename(fname)
         print('INFO:: comparison_metrics basename:', basename)
-
 
         if basename.endswith('coefficients.csv'):
             # skip the summary file named coefficients.csv
@@ -142,17 +144,17 @@ def compute_comparison_metrics(in_path, out_path):
         # 2. model stability - find min
         stable_metric = 0
         stabledelta_nbh = 5
-        if 2*stabledelta_nbh > len(test_loss):
-            stabledelta_nbh = len(test_loss)/2
+        if 2 * stabledelta_nbh > len(test_loss):
+            stabledelta_nbh = len(test_loss) / 2
 
         min_range = min_index_test_loss[0] - stabledelta_nbh
         max_range = min_index_test_loss[0] + stabledelta_nbh
         if min_range < 0:
             min_range = 0
-            max_range = min_index_test_loss[0] + 2*stabledelta_nbh
+            max_range = min_index_test_loss[0] + 2 * stabledelta_nbh
         if max_range >= len(test_loss):
             max_range = len(test_loss)
-            min_range = max_range - 2*stabledelta_nbh
+            min_range = max_range - 2 * stabledelta_nbh
 
         print('INFO: min_range [epochs]:', min_range)
         print('INFO: max_range [epochs]:', max_range)
@@ -171,7 +173,7 @@ def compute_comparison_metrics(in_path, out_path):
         # array_metrics[training_time_mintestloss_label] = time_min_test_loss
         training_timemintestloss.append(time_min_test_loss.data[0])
 
-        time_train_100epochs = x_final[len(x_final)-1] #np.amax(x_final) # - find min
+        time_train_100epochs = x_final[len(x_final) - 1]  # np.amax(x_final) # - find min
         print('INFO: time_train_100epochs [seconds]:', time_train_100epochs)
         # training_time_100epochs_label = 4 # 'training_time_100epochs_label'
         # array_metrics[training_time_100epochs_label] = time_train_100epochs
@@ -194,7 +196,6 @@ def compute_comparison_metrics(in_path, out_path):
         predictable_error_expF_P20 = np.sum(abs(delta_expF_P20_test))
         print('INFO: predictable_error (expF_P20_test):', predictable_error_expF_P20)
         training_predictable_expF_P20.append(predictable_error_expF_P20)
-
 
         ########################################
         # Pearson product-moment correlation coefficients according to
@@ -231,9 +232,9 @@ def compute_comparison_metrics(in_path, out_path):
             contain_match_string = "_" + parts[-2] + ".csv"
             foundMatch = False
             for csv_file in os.listdir(csv_folder):
-                #print('DEBUG: csv_file:', csv_file)
+                # print('DEBUG: csv_file:', csv_file)
                 if csv_file.endswith(".csv") and csv_file.startswith(start_match_string) and \
-                    not csv_file.endswith('_pretrained.csv') and contain_match_string in csv_file:
+                        not csv_file.endswith('_pretrained.csv') and contain_match_string in csv_file:
                     fname_match_pretrained = os.path.join(in_path, csv_file)
                     print('fname_match_pretrained:', fname_match_pretrained)
                     foundMatch = True
@@ -251,7 +252,8 @@ def compute_comparison_metrics(in_path, out_path):
                     print('INFO: min_index_test_loss_pretrained:', min_index_test_loss_pretrained)
 
                     training_initgain_testloss.append(min_test_loss - min_test_loss_pretrained)
-                    training_initgain_time.append(min_index_test_loss[0].data[0] - min_index_test_loss_pretrained[0].data[0])
+                    training_initgain_time.append(
+                        min_index_test_loss[0].data[0] - min_index_test_loss_pretrained[0].data[0])
 
                     sum_comp = 0
                     for i in range(0, len(test_loss)):
@@ -273,7 +275,6 @@ def compute_comparison_metrics(in_path, out_path):
             training_initgain_time.append('None')
             data_compatibility_pretrain.append('None')
 
-
     metrics_list[basename_label] = basename_metrics
     metrics_list[accuracy_mintestloss_label] = accuracy_mintestloss
     metrics_list[accuracy_maxstability_label] = accuracy_maxstability
@@ -294,18 +295,20 @@ def compute_comparison_metrics(in_path, out_path):
     metrics_list[training_initgain_time_label] = training_initgain_time
 
     ##########################################
-    #metrics_list = pd.DataFrame({"metrics": [array_metrics]})
+    # metrics_list = pd.DataFrame({"metrics": [array_metrics]})
     print(metrics_list)
-    #metrics_list.to_csv(output_metrics_file, index=False)
+    # metrics_list.to_csv(output_metrics_file, index=False)
     metrics_list.to_csv(output_metrics_file, mode='a', header=False, index=False)
-
 
 
 def main():
     # Setup the Argument parsing
-    parser = argparse.ArgumentParser(prog='compare_metrics', description='Script which computes metrics for comparing AI architectures')
-    parser.add_argument('--input_dir', dest='input_dir', type=str, help='Folder where all input CSV files are located (Required)', required=True)
-    parser.add_argument('--output_dir', dest='output_dir', type=str, help='Folder where output metrics will be saved (Required)', required=True)
+    parser = argparse.ArgumentParser(prog='compare_metrics',
+                                     description='Script which computes metrics for comparing AI architectures')
+    parser.add_argument('--input_dir', dest='input_dir', type=str,
+                        help='Folder where all input CSV files are located (Required)', required=True)
+    parser.add_argument('--output_dir', dest='output_dir', type=str,
+                        help='Folder where output metrics will be saved (Required)', required=True)
 
     args = parser.parse_args()
     if args.input_dir is None:

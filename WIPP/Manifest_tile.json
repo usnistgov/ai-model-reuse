@@ -1,6 +1,6 @@
 {
     "name": "2D tiling plugin",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "title": "tiling plugin",
     "description": "Plugin for combining INFER images into stacks ",
     "author": "Pushkar Sathe",
@@ -8,9 +8,10 @@
     "repository": "https://github.com/usnistgov/ai-model-reuse",
     "website": "https://isg.nist.gov/deepzoomweb/data/inferSegmentation",
     "citation": "",
-    "containerId": "wipp/infer-ai-training:0.0.1",
+    "containerId": "wipp/infer-ai-training:0.0.2",
     "baseCommand": [
-        "python tiling.py"
+        "python",
+        "preprocess/tiling.py"
     ],
     "inputs": [
         {
@@ -50,12 +51,14 @@
             "key": "inputs.x",
             "title": "Pieces along x axis",
             "description": "choose number of pieces along x axis",
+            "default": "10",
             "hidden": false
         },
         {
             "key": "inputs.y",
             "title": "Pieces along y axis",
             "description": "choose number of pieces along y axis",
+            "default": "10",
             "hidden": false
         }
     ],
