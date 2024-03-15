@@ -7,23 +7,18 @@ from torchvision.models.segmentation.lraspp import LRASPPHead
 from torchvision.models.mobilenetv3 import MobileNetV3, _mobilenet_v3_conf
 from torchvision import models
 from INFER_input_model import *
+from metrics import *
 import csv
 import os
 import time
 import argparse
-import numpy as np
 import torch
 from pathlib import Path
 from tqdm import tqdm
 from gpu_utilization import write_header
 from gpu_utilization import record
-
 from INFER_Dataset import GetDataloader
 
-from sklearn.metrics import f1_score, roc_auc_score, mean_squared_error, jaccard_score
-
-
-# from scipy.spatial.distance import dice
 
 
 def initializeModel(output_channels, pretrained, name, input_channels=252, bs=80, windowsize=200):
@@ -93,110 +88,32 @@ def initializeModel(output_channels, pretrained, name, input_channels=252, bs=80
                                        window_size=windowsize, batchsize=bs)
     else:
         selected_model = model
-    # if channels:
-    #     model.backbone.conv1 = torch.nn.Conv2d(int(channels), 64, 7, 2, 3, bias=False)
-    #     model_input = torch.nn()
-    # print(model)
     if not pretrained:
         selected_model.train()
     return selected_model  # Will be none if model is not initialized
 
 
-def confusion_matrix(predictions, masks, classes):
-    matrix = np.zeros((classes, classes))
-    for i in range(predictions.shape[0]):
-        pred = torch.argmax(predictions[i], 0)
-        pred = pred.cpu().detach().numpy().astype(np.uint8)
-        mask = torch.squeeze(masks[i], 0)
-        mask = mask.cpu().detach().numpy().astype(np.uint8)
-        for h in range(pred.shape[0]):
-            for w in range(pred.shape[1]):
-                matrix[pred[h][w]][mask[h][w]] += 1
-    return matrix
-
-
-def get_accuracy_batch(predictions, masks):
-    total_acc = 0
-    length = predictions.shape[0]
-    for i in range(predictions.shape[0]):
-        pred = torch.argmax(predictions[i], 0)
-        pred = pred.cpu().detach().numpy().astype(np.uint8)
-        mask = torch.squeeze(masks[i], 0)
-        mask = mask.cpu().detach().numpy().astype(np.uint8)
-        matched = np.sum(pred == mask)
-        total_acc += (matched / pred.size)
-    avg_acc = total_acc / length
-    return avg_acc
-
-
-def get_dice_batch(predictions, masks):
-    total_dice = 0
-    length = predictions.shape[0]
-    for i in range(predictions.shape[0]):
-        pred = torch.argmax(predictions[i], 0)
-        pred = pred.cpu().detach().numpy().astype(np.uint8)
-        mask = torch.squeeze(masks[i], 0)
-        mask = mask.cpu().detach().numpy().astype(np.uint8)
-        # print("maskshape", mask.shape,"predshape", pred.shape)
-        jaccard_coeff = jaccard_score(mask.flatten(), pred.flatten(), average='micro')
-        #  https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
-        dice_coeffs = (2 * jaccard_coeff) / (jaccard_coeff + 1)
-        # print("DICE", dice_coeffs, pred.shape, mask.shape)
-        total_dice += dice_coeffs
-    avg_dice = total_dice / length
-    return avg_dice
-
-
-def get_jaccard_batch(predictions, masks):
-    total_jaccard = 0
-    length = predictions.shape[0]
-    for i in range(predictions.shape[0]):
-        pred = torch.argmax(predictions[i], 0)
-        pred = pred.cpu().detach().numpy().astype(np.uint8)
-        mask = torch.squeeze(masks[i], 0)
-        mask = mask.cpu().detach().numpy().astype(np.uint8)
-        # print("maskshape", mask.shape,"predshape", pred.shape)
-        jaccard_coeff = jaccard_score(mask.flatten(), pred.flatten(), average='micro')
-        #  https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
-        total_jaccard += jaccard_coeff
-    avg_jaccard = total_jaccard / length
-    return avg_jaccard
-
-
-def get_mse_batch(predictions, masks):
-    total_mse = 0
-    length = predictions.shape[0]
-    for i in range(predictions.shape[0]):
-        pred = torch.argmax(predictions[i], 0)
-        pred = pred.cpu().detach().numpy().astype(np.uint8)
-        mask = torch.squeeze(masks[i], 0)
-        mask = mask.cpu().detach().numpy().astype(np.uint8)
-        mse_coeffs = mean_squared_error(mask.flatten(), pred.flatten())
-        total_mse += mse_coeffs
-    avg_mse = total_mse / length
-    return avg_mse
-
-
-def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen_metrics, bpath,
-                num_epochs, device_name, metrics_name, mfn, model_name, pretrained, lr, bs, classes):
+def train_model(model, criterion, criterion_test, dataloaders, optimizer, bpath, num_epochs, devicetype, metricsfile,
+                mfn, modelName, pretrained, lr, bs, classes):
     since = time.time()
     # best_model_wts = copy.deepcopy(model.state_dict())
     best_loss = 1e10
-    best_epoch = 0
+    min_dice = 0
+    # best_epoch = 0
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     model.to(device)
     # TODO: add chosen_metrics keys to fieldnames
     fieldnames = ['Model', 'Pretrained', 'LR', 'Batch_Size', 'epoch', 'Seconds', 'Train_loss', 'Test_loss',
                   'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score', 'Dice', 'Jaccard', 'MSE']
-    print('INFO: pytorch model output stats:', os.path.join(bpath, metrics_name))
+    print('INFO: pytorch model output stats:', os.path.join(bpath, metricsfile))
 
-    with open(os.path.join(bpath, metrics_name), 'w', newline='') as csvfile:
+    with open(os.path.join(bpath, metricsfile), 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
     # save gpu utilization
-    gpu_metric_filename, info_suffix = os.path.splitext(metrics_name)
+    gpu_metric_filename, info_suffix = os.path.splitext(metricsfile)
     print('DEBUG: gpu_metric_filename:', gpu_metric_filename, ' info_suffix:', info_suffix)
     gpu_metric_filename += '_gpu.csv'
     gpu_metric_folder = os.path.join(bpath, 'gpu_info')
@@ -211,11 +128,11 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
     start_time = time.time()
     for epoch in range(1, num_epochs + 1):
         running_loss = 0
-        print('Epoch {}/{}'.format(epoch, num_epochs))
+        print(f'Epoch {epoch}/{num_epochs}')
         print('-' * 10)
         batchsummary = {a: [0] for a in fieldnames}
         batchsummary['epoch'] = epoch
-        batchsummary['Model'] = model_name
+        batchsummary['Model'] = modelName
         batchsummary['Pretrained'] = pretrained
         batchsummary['LR'] = lr
         batchsummary['Batch_Size'] = bs
@@ -228,7 +145,7 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
             masks = sample['mask'].to(device)
             optimizer.zero_grad()
             with torch.set_grad_enabled(True):
-                if device_name == 'cpu':
+                if devicetype == 'cpu':
                     inputs = inputs.type(torch.FloatTensor)
                     masks = masks.type(torch.FloatTensor)
                 else:
@@ -236,18 +153,8 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
                     masks = masks.type(torch.cuda.FloatTensor)
                     # add dimension for channels = 1
                     # masks = masks.unsqueeze(1)
-
-                # print('\nINPUTS:', inputs.shape)
-                # print('\nMASKS:', masks.shape)
-                # print('\n')
-
-                # if inputs.ndim == 5:  # Reshape to 4 dimensions
-                #     inputs = inputs[:, :, 0, :, :]
-                # print("INPUTS DIMENSIONS ", inputs.shape, flush=True)
                 outputs = model(inputs)
-                # print("MASKS: ", masks.shape, masks.dtype, flush=True)
-                # print("OUTPUT :", type(outputs), outputs.shape,outputs.dtype, flush=True)
-                if device_name == 'cpu':
+                if devicetype == 'cpu':
                     loss = criterion(outputs, masks.type(torch.LongTensor))
                 else:
                     loss = criterion(outputs, masks.type(torch.cuda.LongTensor))
@@ -258,13 +165,12 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
         batchsummary['Train_loss'] = epoch_loss
 
         # record gpu utilization
-        # gpu_utilization.record(epoch, gpu_metric_filename)
         record(epoch, gpu_metric_filename)
 
         # set the model into evaluation mode
         model.eval()
-        running_loss = 0
         matrices = []
+        running_loss = 0
         running_acc = 0
         running_dice = 0
         running_jaccard = 0
@@ -274,29 +180,20 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
             masks = sample['mask'].to(device)
             optimizer.zero_grad()
             with torch.no_grad():
-                if device_name == 'cpu':
+                if devicetype == 'cpu':
                     inputs = inputs.type(torch.FloatTensor)
                     masks = masks.type(torch.FloatTensor)
                 else:
                     inputs = inputs.type(torch.cuda.FloatTensor)
                     masks = masks.type(torch.cuda.FloatTensor)
-                # if inputs.ndim == 5:  # Reshape to 4 dimensions
-                #     # print("INPUTS DIMENSIONS BEFORE: ", inputs.shape)
-                #     # inputs = inputs.reshape(inputs.shape[:-2] + (-1,))
-                #     inputs = inputs[:, :, 0, :, :]
-                # print("INPUTS DIMENSIONS: ", inputs.shape)
                 outputs = model(inputs)
-                # print("INPUTS DIMENSIONS ", inputs.shape, flush=True)
-                # print("OUTPUT DIMENSIONS ", outputs.shape, flush=True)
                 running_acc += get_accuracy_batch(outputs, masks)
-                running_dice += get_dice_batch(outputs, masks)
-                running_jaccard += get_jaccard_batch(outputs, masks)
+                # running_dice += get_dice_batch(outputs, masks)
+                # running_jaccard += get_jaccard_batch(outputs, masks)
                 running_mse += get_mse_batch(outputs, masks)
-                matrices.append(confusion_matrix(outputs, masks, classes))
-                # print("MASKS: ", masks.shape, flush=True)
+                matrices.append(confusionmat(outputs, masks, classes))
                 masks = masks.squeeze(1)
-                # print("MASKS: ", masks.shape, flush=True)
-                if device_name == 'cpu':
+                if devicetype == 'cpu':
                     test_loss = criterion_test(outputs, masks.type(torch.LongTensor))
                 else:
                     test_loss = criterion_test(outputs, masks.type(torch.cuda.LongTensor))
@@ -307,62 +204,66 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
                     best_model = model
         epoch_loss = running_loss / len(dataloaders['Test'])
         epoch_accuracy = running_acc / len(dataloaders['Test'])
-        epoch_dice = running_dice / len(dataloaders['Test'])
-        epoch_jaccard = running_jaccard / len(dataloaders['Test'])
+        # epoch_dice = running_dice / len(dataloaders['Test'])
+        # epoch_jaccard = running_jaccard / len(dataloaders['Test'])
         epoch_mse = running_mse / len(dataloaders['Test'])
-        cf = np.sum(matrices, 0)
-        running_precision = 0
-        sums = np.sum(cf, axis=1).tolist()
-        avgsubtract = 0
-        for i in range(0, classes):
-            toadd = 0
-            if sums[i] == 0:
-                toadd = 0
-                avgsubtract += 1
-            else:
-                toadd = cf[i][i] / sums[i]
-            running_precision += toadd
-        print(classes, avgsubtract, running_precision)
-        if running_precision:
-            avg_precision = running_precision / (classes - avgsubtract)
-        else:
-            avg_precision = 0
-        col_sums = np.sum(cf, axis=0).tolist()
-        running_recall = 0
-        avgsubtract = 0
-        for i in range(0, classes):
-            toadd = 0
-            if col_sums[i] == 0:
-                toadd = 0
-                avgsubtract += 1
-            else:
-                toadd = cf[i][i] / col_sums[i]
-            running_recall += toadd
-        if running_recall:
-            avg_recall = running_recall / (classes - avgsubtract)
-        else:
-            avg_recall = 0
-        if avg_recall or avg_precision:
-            f1 = ((avg_precision * avg_recall) / (avg_precision + avg_recall)) * 2
-        else:
-            f1 = 0
+        # cf = np.sum(matrices, 0)
+        # running_precision = 0
+        # sums = np.sum(cf, axis=1).tolist()
+        # avgsubtract = 0
+        # for i in range(0, classes):
+        #     class_precision = 0
+        #     if sums[i] == 0:
+        #         avgsubtract += 1
+        #     else:
+        #         class_precision = cf[i][i] / sums[i]
+        #     running_precision += class_precision
+        # print(classes, avgsubtract, running_precision)
+        # if classes - avgsubtract > 0:
+        #     avg_precision = running_precision / (classes - avgsubtract)
+        # else:
+        #     avg_precision = 0  # TODO: This is a temporary fix for tomography, but leads to inaccuracies in all metrics with the fix
+        # col_sums = np.sum(cf, axis=0).tolist()
+        # running_recall = 0
+        # avgsubtract = 0
+        # for i in range(0, classes):
+        #     class_recall = 0
+        #     if col_sums[i] == 0:
+        #         avgsubtract += 1
+        #     else:
+        #         class_recall = cf[i][i] / col_sums[i]
+        #     running_recall += class_recall
+        # if classes - avgsubtract > 0:
+        #     avg_recall = running_recall / (classes - avgsubtract)
+        # else:
+        #     avg_recall = 0
+        # if avg_recall or avg_precision:  # ensure atleast one is nonzero
+        #     f1 = ((avg_precision * avg_recall) / (avg_precision + avg_recall)) * 2
+        # else:
+        #     f1 = 0
+
+        macro_precision, macro_recall, macro_f1, macro_jaccard, micro_precision, micro_recall, micro_f1, micro_jaccard, confidences = calculate_metrics(
+            matrices, classes)
         batchsummary['Per-Pixel Accuracy'] = epoch_accuracy
         batchsummary['Test_loss'] = epoch_loss
-        batchsummary['Precision'] = avg_precision
-        batchsummary['Recall'] = avg_recall
-        batchsummary['F1-Score'] = f1
-        batchsummary['Dice'] = epoch_dice
-        batchsummary['Jaccard'] = epoch_jaccard
+        batchsummary['Precision_macro'] = macro_precision
+        batchsummary['Precision_micro'] = micro_precision
+        batchsummary['Recall_macro'] = macro_recall
+        batchsummary['Recall_micro'] = micro_recall
+        batchsummary['Dice_macro'] = macro_f1
+        batchsummary['Dice_micro'] = micro_f1
+        batchsummary['Jaccard_macro'] = macro_jaccard
+        batchsummary['Jaccard_micro'] = micro_jaccard
+        batchsummary['']
         batchsummary['MSE'] = epoch_mse
         seconds = time.time() - start_time
         seconds = int(seconds)
         batchsummary['Seconds'] = seconds
         print(batchsummary)
-        if min_dice > epoch_dice:
-            tol = epoch
-            min_dice = epoch_dice
+        # if min_dice < epoch_dice:
+        #     min_dice = epoch_dice
 
-        with open(os.path.join(bpath, metrics_name), 'a', newline='') as csvfile:
+        with open(os.path.join(bpath, metricsfile), 'a', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow(batchsummary)
         # if epoch == num_epochs:# TODO replace with best model
@@ -377,23 +278,23 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, chosen
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='inference', description='Script which trains a Deeplabv3 model')
-    parser.add_argument('--data', type=str)
-    parser.add_argument('--train_images', type=str)
-    parser.add_argument('--train_masks', type=str)
-    parser.add_argument('--test_images', type=str)
-    parser.add_argument('--test_masks', type=str)
-    parser.add_argument('--output_dir', type=str)
-    parser.add_argument('--epochs', type=int)
-    parser.add_argument('--model_filename', type=str)
-    parser.add_argument('--device_name', type=str)
-    parser.add_argument('--batch_size', type=int)
-    parser.add_argument('--learning_rate', type=float)
-    parser.add_argument('--metrics_name', type=str)
-    parser.add_argument('--model_name', type=str)
-    parser.add_argument('--pretrained')
-    parser.add_argument('--classes', type=int)
-    parser.add_argument('--inputchannels', type=int)
+    parser = argparse.ArgumentParser(prog='Training', description='Script which trains a Deeplabv3 model')
+    parser.add_argument('--data', type=str, description='')
+    parser.add_argument('--trainImages', type=str, description='')
+    parser.add_argument('--trainMasks', type=str, description='')
+    parser.add_argument('--testImages', type=str, description='')
+    parser.add_argument('--testMasks', type=str, description='')
+    parser.add_argument('--outputDir', type=str, description='')
+    parser.add_argument('--epochs', type=int, description='')
+    parser.add_argument('--modelWeights', type=str, description='')
+    parser.add_argument('--devicetype', type=str, description='')
+    parser.add_argument('--batchsize', type=int, description='')
+    parser.add_argument('--learningRate', type=float, description='')
+    parser.add_argument('--metricsfile', type=str, description='')
+    parser.add_argument('--modelName', type=str, description='')
+    parser.add_argument('--pretrained', type=bool, description='')
+    parser.add_argument('--classes', type=int, description='')
+    parser.add_argument('--inputchannels', type=int, description='')
     args, unknown = parser.parse_known_args()
 
     if args.data is None:
@@ -430,23 +331,23 @@ def main():
                                     mask1
                                     mask2
 
-                output_dir (str): FULL PATH of directory where you want output to be stored. 2 things will be stored here: the model weights, 
+                outputDir (str): FULL PATH of directory where you want output to be stored. 2 things will be stored here: the model weights, 
                 and the log.csv file containing the metrics
 
                 epochs (int): number of epochs to be trained
 
-                model_filename (str): This is the NAME of the .pt file where the model's weights will be stored. This will be located in your
-                output_dir.  Example: "weights.pt"
+                modelWeights (str): This is the NAME of the .pt file where the model's weights will be stored. This will be located in your
+                outputDir.  Example: "weights.pt"
 
-                device_name (str): should be set to "gpu" or "cpu"
+                devicetype (str): should be set to "gpu" or "cpu"
 
-                batch_size (int) : batch size
+                batchsize (int) : batch size
 
-                learning_rate (float) : learning rate
+                learningRate (float) : learning rate
 
-                metrics_name (str) : name of the csv file that metrics will be stored. Example: "metrics.csv"
+                metricsfile (str) : name of the csv file that metrics will be stored. Example: "metrics.csv"
 
-                model_name (str) : name of the model you want (i.e Deeplab, Resnet)
+                modelName (str) : name of the model you want (i.e Deeplab, Resnet)
 
                 pretrained (str) : either "True" or "False" to obtain a pretrained pytorch model or train from scratch.  This string will be converted to a Python bool
 
@@ -457,67 +358,58 @@ def main():
 
             """
 
-    if args.device_name == 'cpu':
-        data = args.data
-    else:
-        data = args.data
-
+    data = args.data
     dataloader_class = GetDataloader(data_dir=data,  # create class that contains the dataloaders and class weights
-                                     train_image_folder=args.train_images,
-                                     train_mask_folder=args.train_masks,
-                                     test_image_folder=args.test_images,
-                                     test_mask_folder=args.test_masks,
-                                     batch_size=args.batch_size,
+                                     train_image_folder=args.trainImages,
+                                     train_mask_folder=args.trainMasks,
+                                     test_image_folder=args.testImages,
+                                     test_mask_folder=args.testMasks,
+                                     batchsize=args.batchsize,
                                      fraction=0.2,
                                      n_classes=args.classes)
 
     seg_dataloader = dataloader_class.dataloaders  # grab dataloader from the class
-    if (len(seg_dataloader['Train']) < 1 or len(seg_dataloader['Test']) < 1):
+    if len(seg_dataloader['Train']) < 1 or len(seg_dataloader['Test']) < 1:
         print('ERROR: could not find train or test data len(train):', len(seg_dataloader['Train']))
         print('len(test):', len(seg_dataloader['Test']))
 
-    toBool = True
+    pretrained = True
     if args.pretrained == 'False':
-        toBool = False
+        pretrained = False
     # TODO: Add functionality for dynamically choosing windowsize
     # TODO: also dynamically choose input_channels
     # Calls function to create the deeplabv3 model from torchvision.
-    model = initializeModel(output_channels=args.classes, pretrained=toBool, name=args.model_name,
-                            input_channels=args.inputchannels, bs=args.batch_size)
-    if args.device_name == 'cpu':
-        output_dir = args.output_dir
-    else:
-        output_dir = args.output_dir
-
-    if not Path(output_dir).exists():
-        Path(output_dir).mkdir()
+    model = initializeModel(output_channels=args.classes, pretrained=pretrained, name=args.modelName,
+                            input_channels=args.inputchannels, bs=args.batchsize)
+    outputDir = args.outputDir
+    if not Path(outputDir).exists():
+        Path(outputDir).mkdir()
 
     my_weights = dataloader_class.weights
     total_pixels = sum(my_weights)
     if total_pixels < 1:
-        print("ERROR: total_pixels < 1 : {}".format(total_pixels))
+        print(f"ERROR: total_pixels < 1 : {total_pixels}")
         return
 
     fractions = []
     for number in my_weights:
         fractions.append(1.0 - (number / total_pixels))
 
-    if args.device_name == 'cpu':
+    if args.devicetype == 'cpu':
         my_weights = torch.FloatTensor(fractions)
     else:
         my_weights = torch.cuda.FloatTensor(fractions)
-    print("Weighted Classes: {}".format(my_weights))
+    print(f"Weighted Classes: {my_weights}")
     criterion = torch.nn.CrossEntropyLoss(weight=my_weights)  # criterion for training (weigthed classes)
     criterion_test = torch.nn.CrossEntropyLoss()  # criterion for validation (no weighted classes)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    metrics = {'f1_score': f1_score, 'auroc': roc_auc_score, 'Dice': jaccard_score, 'MSE': mean_squared_error}
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learningRate)
 
     print('Starting training now')
     print("Seg_dataloader: ", seg_dataloader)
-    train_model(model, criterion, criterion_test, seg_dataloader, optimizer, bpath=output_dir, chosen_metrics=metrics,
-                num_epochs=args.epochs, device_name=args.device_name, metrics_name=args.metrics_name,
-                mfn=args.model_filename, model_name=args.model_name, pretrained=args.pretrained, lr=args.learning_rate,
-                bs=args.batch_size, classes=args.classes)
+    train_model(model, criterion, criterion_test, seg_dataloader, optimizer, bpath=outputDir, num_epochs=args.epochs,
+                devicetype=args.devicetype, metricsfile=args.metricsfile, mfn=args.modelWeights,
+                modelName=args.modelName, pretrained=args.pretrained, lr=args.learningRate, bs=args.batchsize,
+                classes=args.classes)
 
 
 if __name__ == "__main__":
