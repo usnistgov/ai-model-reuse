@@ -20,7 +20,6 @@ from gpu_utilization import record
 from INFER_Dataset import GetDataloader
 
 
-
 def initializeModel(output_channels, pretrained, name, input_channels=252, bs=80, windowsize=200):
     model = None
     combine = True
@@ -104,8 +103,13 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, bpath,
     print(device)
     model.to(device)
     # TODO: add chosen_metrics keys to fieldnames
+    # fieldnames = ['Model', 'Pretrained', 'LR', 'Batch_Size', 'epoch', 'Seconds', 'Train_loss', 'Test_loss',
+    #               'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score', 'Dice', 'Jaccard', 'MSE']
     fieldnames = ['Model', 'Pretrained', 'LR', 'Batch_Size', 'epoch', 'Seconds', 'Train_loss', 'Test_loss',
-                  'Per-Pixel Accuracy', 'Precision', 'Recall', 'F1-Score', 'Dice', 'Jaccard', 'MSE']
+                  'Per-Pixel Accuracy', 'Precision_macro', 'Precision_micro', 'Recall_macro', 'Recall_micro',
+                  'Dice_macro', 'Dice_micro', 'Jaccard_macro', 'Jaccard_micro', 'confidence_sd_macro',
+                  'confidence_sd_micro', 'MSE']
+
     print('INFO: pytorch model output stats:', os.path.join(bpath, metricsfile))
 
     with open(os.path.join(bpath, metricsfile), 'w', newline='') as csvfile:
@@ -254,7 +258,8 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, bpath,
         batchsummary['Dice_micro'] = micro_f1
         batchsummary['Jaccard_macro'] = macro_jaccard
         batchsummary['Jaccard_micro'] = micro_jaccard
-        batchsummary['']
+        batchsummary['confidence_sd_micro'] = confidences['SD'][0]
+        batchsummary['confidence_sd_macro'] = confidences['SD'][1]
         batchsummary['MSE'] = epoch_mse
         seconds = time.time() - start_time
         seconds = int(seconds)
@@ -279,22 +284,22 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, bpath,
 
 def main():
     parser = argparse.ArgumentParser(prog='Training', description='Script which trains a Deeplabv3 model')
-    parser.add_argument('--data', type=str, description='')
-    parser.add_argument('--trainImages', type=str, description='')
-    parser.add_argument('--trainMasks', type=str, description='')
-    parser.add_argument('--testImages', type=str, description='')
-    parser.add_argument('--testMasks', type=str, description='')
-    parser.add_argument('--outputDir', type=str, description='')
-    parser.add_argument('--epochs', type=int, description='')
-    parser.add_argument('--modelWeights', type=str, description='')
-    parser.add_argument('--devicetype', type=str, description='')
-    parser.add_argument('--batchsize', type=int, description='')
-    parser.add_argument('--learningRate', type=float, description='')
-    parser.add_argument('--metricsfile', type=str, description='')
-    parser.add_argument('--modelName', type=str, description='')
-    parser.add_argument('--pretrained', type=bool, description='')
-    parser.add_argument('--classes', type=int, description='')
-    parser.add_argument('--inputchannels', type=int, description='')
+    parser.add_argument('--data', type=str, help='')
+    parser.add_argument('--trainImages', type=str, help='')
+    parser.add_argument('--trainMasks', type=str, help='')
+    parser.add_argument('--testImages', type=str, help='')
+    parser.add_argument('--testMasks', type=str, help='')
+    parser.add_argument('--outputDir', type=str, help='')
+    parser.add_argument('--epochs', type=int, help='')
+    parser.add_argument('--modelWeights', type=str, help='')
+    parser.add_argument('--devicetype', type=str, help='')
+    parser.add_argument('--batchsize', type=int, help='')
+    parser.add_argument('--learningRate', type=float, help='')
+    parser.add_argument('--metricsfile', type=str, help='')
+    parser.add_argument('--modelName', type=str, help='')
+    parser.add_argument('--pretrained', type=bool, help='')
+    parser.add_argument('--classes', type=int, help='')
+    parser.add_argument('--inputchannels', type=int, help='')
     args, unknown = parser.parse_known_args()
 
     if args.data is None:
@@ -359,12 +364,15 @@ def main():
             """
 
     data = args.data
+    if os.path.exists(args.trainImages) and os.path.exists(args.trainMasks) and os.path.exists(args.testImages) and os.path.exists(args.testMasks):
+        pass
+
     dataloader_class = GetDataloader(data_dir=data,  # create class that contains the dataloaders and class weights
                                      train_image_folder=args.trainImages,
                                      train_mask_folder=args.trainMasks,
                                      test_image_folder=args.testImages,
                                      test_mask_folder=args.testMasks,
-                                     batchsize=args.batchsize,
+                                     batch_size=args.batchsize,
                                      fraction=0.2,
                                      n_classes=args.classes)
 
