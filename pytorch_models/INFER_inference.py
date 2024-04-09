@@ -3,7 +3,6 @@
 # You are solely responsible for determining the appropriateness of using and distributing the software and you assume all risks associated with its use, including but not limited to the risks and costs of program errors, compliance with applicable laws, damage to or loss of data, programs or equipment, and the unavailability or interruption of operation. This software is not intended to be used in any situation where a failure could cause risk of injury or damage to property. The software developed by NIST employees is not subject to copyright protection within the United States.
 
 import csv
-import sys
 import time
 import warnings
 from numpy.compat import unicode
@@ -14,6 +13,7 @@ import skimage.io
 import skimage
 import skimage.transform
 import argparse
+import model_analysis
 import os
 import INFER_segm_comparisons as segm_comp
 from pathlib import Path
@@ -146,6 +146,7 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
     PCM = None
     known_labels = []
     cumulative_PCM = None
+    layer = None
     for i in range(len(file_array)):
         image_basename = os.path.basename(file_array[i])
         found_match = False
@@ -170,7 +171,13 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         img = torch.from_numpy(image)
         img = torch.unsqueeze(img, 0)
         img = img.type(torch.cuda.FloatTensor)
+        layers = model_analysis.get_layerweights(model)
         pred = model(img)
+        layer_len = len(layers)
+        assert layer_len > 0, "layers list is empty"
+        if layer_len > 1:
+            print(layer_len)
+        layer = layers.pop()
         pred = torch.squeeze(pred, 0)
         pred = torch.argmax(pred, 0)
         pred = pred.cpu().detach().numpy().astype(np.uint8)
@@ -209,8 +216,18 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         # TODO disabled for INFER numerical evaluations - should be enabled in the future
         basename = os.path.basename(file_array[i])
         output_fullpath = str(output_dir) + "/pred_{}".format(basename)
+        # outgparent = os.path.dirname()
+        outparent, outbasename = os.path.split(output_dir)
+        fe_dir = outparent + f"_fe/"
+        if not os.path.exists(fe_dir):
+            os.mkdir(fe_dir)
+        fe_subdir = fe_dir + f"/{outbasename}"
+        if not os.path.exists(fe_subdir):
+            os.mkdir(fe_subdir)
+        fe_fullpath = f"/{fe_subdir}/fe_{basename}"
         # print('done:', basename, end='\t')
         skimage.io.imsave(output_fullpath, pred)
+        skimage.io.imsave(fe_fullpath, layer)
     if len(file_array) > 0:
         MCM_combined, sorted_labels = segm_comp.getMCMfromDict(labelwiseMCM=labelwise_MCM)
         if use_avgs:

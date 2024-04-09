@@ -1,5 +1,6 @@
+import numpy as np
 import torch
-
+import model_analysis
 from torchsummaryX import summary as summaryX  #: For asserting model input output layer dimensions
 from torchsummary import summary  #: For asserting model input output layer dimensions
 
@@ -315,18 +316,28 @@ if __name__ == "__main__":
     """
     # from torchvision import models
     #
-    outputchannels = 255
+    outputchannels = 256
     input_channels = 168
-    image_shape = (input_channels, 2000, 2000, 2000)
+    image_shape = (input_channels, 20, 200, 200)
     window = 200
+    testdata = np.random.random(image_shape)
+
     # infer_input_model = LSTMModel(input_size=input_channels, hidden_size=32, num_layers=2,
     #                               num_classes=outputchannels)
-    infer_input_model = GRU_3D_Model(input_size=input_channels, hidden_size=64, num_layers=2,
-                                     num_classes=outputchannels)
+    # infer_input_model = GRU_3D_Model(input_size=input_channels, hidden_size=64, num_layers=2,
+    #                                  num_classes=outputchannels)
 
     # infer_input_model = INFERFeatureExtractor1D(input_channels=input_channels, output_channels=outputchannels)
-    # infer_input_model = CombinedModel(input_channels, None, outputchannels, window_size=200, batchsize=80)
-    print(summaryX(infer_input_model, torch.zeros((80, 50, window, window, window))))
+    from torchvision.models.segmentation.deeplabv3 import DeepLabHead
+    from torchvision import models
+
+    connect_model = models.segmentation.deeplabv3_resnet50(pretrained=True, progress=True)
+    connect_model.classifier = DeepLabHead(2048, outputchannels)
+    infer_input_model = CombinedModel(input_channels, connect_model, outputchannels, window_size=200, batchsize=80)
+    # print(summaryX(infer_input_model, torch.zeros((50, input_channels, window, window))))
+    model_analysis.get_layerweights(infer_input_model)
+    inf = infer_input_model(testdata)
+    print(inf)
     # print(summary(infer_input_model, (252, window, window), batch_size=80))
     # preset_model = models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=outputchannels,
     #                                                       progress=True)

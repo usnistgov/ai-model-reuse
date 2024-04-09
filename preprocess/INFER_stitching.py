@@ -9,6 +9,7 @@ import re
 import numpy as np
 import pandas as pd
 import tifffile
+import skimage
 
 """
 This class will stitch tiles in the input folder into a mosaic of tiles saved as one image in the output folder.
@@ -22,6 +23,29 @@ and in the stitching code (tiles are assumed to have the same dimensions as the 
  __author__  = "Pushkar Sathe"
  __email__   = "pushkar.sathe@nist.gov"
 """
+
+
+def open_image(imagepath):
+    success = False
+    read_image = None
+    try:
+        read_image = Image.open(imagepath)
+        success = True
+    except Exception as e:
+        pass
+
+    if not success:
+        try:
+            img_sk = skimage.io.imread(imagepath)
+            read_image = Image.fromarray(np.uint8(img_sk))
+            success = True
+            if read_image.mode != 'RGB':
+                read_image.convert('RGB')
+        except Exception as e:
+            pass
+    if not success:
+        print("Failed to read image")
+    return read_image
 
 
 def stitch_subfolders(image_dir, output_dir, tomo=None):
@@ -40,7 +64,7 @@ def stitch_subfolders(image_dir, output_dir, tomo=None):
                     # else:
                     #     print("tomo selected")
                     #     stitch_tomo(image_dir, output_dir)
-                # else:
+                    # else:
                     continue
             else:
                 model_image_dir = dirpath
@@ -52,9 +76,9 @@ def stitch_subfolders(image_dir, output_dir, tomo=None):
                 # else:
                 #     print("tomo selected1", model_image_dir)
                 #     stitch_tomo(model_image_dir, model_output_dir)
-    else: # assume tomo doesnt use subfolders
+    else:  # assume tomo doesnt use subfolders
         stitch_tomo(image_dir, output_dir)
-            # print(tomo)
+        # print(tomo)
 
 
 def stitch(image_dir, output_dir):
@@ -123,7 +147,7 @@ def stitch(image_dir, output_dir):
                 if not file_exists:
                     print('INFO: missing a tile in the grid: column=', j, ' row=', i)
                     continue
-                img = Image.open(filepath)
+                img = open_image(filepath)
                 # numcols, numrows = img.size #FOR NORMAL?
                 numrows, numcols = img.size  # FOR LSTM
                 if finalWidth == -1 or finalHeight == -1:
@@ -132,7 +156,7 @@ def stitch(image_dir, output_dir):
                         int(max_xTilePos[k])) + file_extension
                     lasttile_filepath = os.path.join(image_dir, lasttile_filename)
                     print('lasttile_filepath:', lasttile_filepath)
-                    img = Image.open(lasttile_filepath)
+                    img = open_image(lasttile_filepath)
                     lasttile_numcols, lasttile_numrows = img.size
                     print("INFO: last tile dim: %s: %s, %s x %s" % (
                         filepath, img.mode, lasttile_numcols, lasttile_numrows))
@@ -150,7 +174,7 @@ def stitch(image_dir, output_dir):
                     result = Image.new(mode=img.mode, size=(finalWidth, finalHeight))
                     result.paste(img, (j * numcols, i * numrows))
                 else:
-                    img = Image.open(filepath)
+                    img = open_image(filepath)
                     result.paste(img, (j * numcols, i * numrows))
         if result is not None:
             # step 3: save the stitched image
@@ -255,9 +279,6 @@ def main():
     if args.output_dir is None:
         print('ERROR: missing output image dir ')
         return
-    # example of arguments:
-    # --image_dir /home/pnb/trainingOutput/pytorchOutput_A10/infer_test_images/ --output_dir /home/pnb/trainingOutput/pytorchOutput_A10/infer_stitch/
-    # --image_dir /home/pnb/trainingOutput/pytorchOutput_cryoem/infer_test_images/ --output_dir /home/pnb/trainingOutput/pytorchOutput_cryoem/infer_stitch/
     # stitch(args.image_dir, args.output_dir)
     print("TOMO:", args.tomo)
     stitch_subfolders(args.image_dir, args.output_dir, args.tomo)
