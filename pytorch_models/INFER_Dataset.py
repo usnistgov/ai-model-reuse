@@ -1,14 +1,8 @@
-from tifffile import tifffile
-import numpy as np
 from skimage.io import imread
-from torch.utils.data import Dataset
-from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
 from torchvision import transforms
-
 from pathlib import Path
 from typing import Any, Callable, Optional
-
 import numpy as np
 from PIL import Image
 from torchvision.datasets.vision import VisionDataset

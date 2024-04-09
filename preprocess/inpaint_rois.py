@@ -35,7 +35,6 @@ https://www.pyimagesearch.com/2020/05/18/image-inpainting-with-opencv-and-python
 
 
 def inpaint_rois(image_folder, mask_folder, output_image_folder):
-
     image_folder = os.path.abspath(image_folder)
     image_files = [f for f in os.listdir(image_folder)]
 
@@ -52,7 +51,7 @@ def inpaint_rois(image_folder, mask_folder, output_image_folder):
         image_file = os.path.join(image_folder, fn)
         mask_file = os.path.join(mask_folder, fn)
         out_image_file = os.path.join(output_image_folder, fn)
-        basename = fn.rsplit('.', 1) # split on the last occurrence of the delimiter
+        basename = fn.rsplit('.', 1)  # split on the last occurrence of the delimiter
 
         if os.path.isfile(image_file) and os.path.isfile(mask_file):
             start = time.time()
@@ -60,24 +59,24 @@ def inpaint_rois(image_folder, mask_folder, output_image_folder):
             # mask = skimage.io.imread(fname=mask_file)
 
             # see the flags at https://www.geeksforgeeks.org/python-opencv-cv2-imread-method/
-            image = cv.imread(image_file, -1) # 0 or cv.IMREAD_GRAYSCALE, -1 is unchanged
+            image = cv.imread(image_file, -1)  # 0 or cv.IMREAD_GRAYSCALE, -1 is unchanged
             mask = cv.imread(mask_file, 0)
             print('image.shape:', image.shape)
             print('mask.shape:', mask.shape)
 
             dst = cv.inpaint(image, mask, 7, cv.INPAINT_TELEA)
-            #dst = cv.inpaint(image, mask, 7, cv.INPAINT_NS)
+            # dst = cv.inpaint(image, mask, 7, cv.INPAINT_NS)
 
             # TODO if input is RGB then   convert amd save gray !!!
-            #gray = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
+            # gray = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
 
-            #skimage.io.imsave(fname=out_image_file, arr=dst)
+            # skimage.io.imsave(fname=out_image_file, arr=dst)
             cv.imwrite(out_image_file, dst)
 
 
-
 def main():
-    parser = argparse.ArgumentParser(prog='inpaint_rois', description='Script that inpaints the ROIs based on nbh pixels')
+    parser = argparse.ArgumentParser(prog='inpaint_rois',
+                                     description='Script that inpaints the ROIs based on nbh pixels')
     parser.add_argument('--image_dir', type=str, help='full path of image folder')
     parser.add_argument('--mask_dir', type=str, help='full path of mask folder')
     parser.add_argument('--output_dir', type=str, help='full path to output folder destination')
@@ -96,6 +95,6 @@ def main():
 
     inpaint_rois(args.image_dir, args.mask_dir, args.output_dir)
 
+
 if __name__ == "__main__":
     main()
-

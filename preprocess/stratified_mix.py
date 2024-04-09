@@ -26,13 +26,13 @@ Combined/3-7_PBS-DD
 
 The folder name will attempt to use the simplest fraction under with denominator under 100, and above 10.
 
-__author__      = "Pushkar Sathe"
-__email__ = "pushkar.sathe@nist.gov"
+__author__ = "Pushkar Sathe"
+__email__  = "pushkar.sathe@nist.gov"
 """
 
 
 def percentage_to_simplest_fraction(percent):
-    print(percent, type(percent))  # must be int or fraction. Floats arent always rational
+    print(percent, type(percent))  # must be int or fraction. Floats aren't always rational
     fraction = Fraction(numerator=int(percent), denominator=100).limit_denominator(100)
     simple_numerator = fraction.numerator
     simple_denominator = fraction.denominator
@@ -52,7 +52,7 @@ def get_files(folder):
     return files, filenames
 
 
-def stratify_and_mix(src_folder1, src_folder2, trainortest, selected_perctentage, target_foldername, suffixes=None):
+def stratify_and_mix(src_folder1, src_folder2, trainortest, selected_percentage, target_foldername, suffixes=None):
     # for suffix in suffixes:
     if suffixes is None:
         suffixes = ["masks", "images"]
@@ -71,7 +71,7 @@ def stratify_and_mix(src_folder1, src_folder2, trainortest, selected_perctentage
     selected_masks = []
     n_select_images = []
     selected_images = []
-    percentages = [selected_perctentage, 100 - selected_perctentage]
+    percentages = [selected_percentage, 100 - selected_percentage]
     for i, src_folder in enumerate(src_folders):
         # images and masks should have the same fiels
         assert all_filenames[f"{i}_{trainortest}_{suffixes[0]}"] == all_filenames[
@@ -133,7 +133,7 @@ def main():
     parser.add_argument('--src_folder1', type=str, required=True, help='Path to the first set of folders.')
     parser.add_argument('--src_folder2', type=str, required=True, help='Path to the second set of folders.')
     parser.add_argument('--ratio', type=float, required=True,
-                        help='Ratio for combining folders in percent of folder 1. folder 2 will use 100-ratio.')
+                        help='Ratio for combining folders in percent of folder 1. folder 2 will use (100-ratio).')
     parser.add_argument('--dest_folder', type=str, required=True, help='Destination folder path.')
 
     args = parser.parse_args()

@@ -203,7 +203,7 @@ def get_tfpn(MCM):
         tn = MCM[:, 0, 0]
         fp = MCM[:, 0, 1]
         fn = MCM[:, 1, 0]
-    elif MCM.ndim == 2:
+    elif MCM.ndim == 2:  # single label
         tp = MCM[1, 1]
         tn = MCM[0, 0]
         fp = MCM[0, 1]
@@ -214,9 +214,9 @@ def get_tfpn(MCM):
 
 
 def classification_divide(numerator, denominator, metric, modifier, average, warn_for, zero_division="warn"):
-    if numerator.ndim==2 and denominator.ndim==2:
+    if numerator.ndim == 2 and denominator.ndim == 2:
         _classification._prf_divide(numerator=numerator, denominator=denominator, metric=metric, modifier=modifier,
-                                average=average, warn_for=warn_for, zero_division=zero_division)
+                                    average=average, warn_for=warn_for, zero_division=zero_division)
 
 
 def cumulative_multilabel_jaccard(MCM):

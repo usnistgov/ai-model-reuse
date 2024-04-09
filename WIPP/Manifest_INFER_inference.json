@@ -8,7 +8,7 @@
     "repository": "https://github.com/usnistgov/ai-model-reuse",
     "website": "https://isg.nist.gov/deepzoomweb/data/inferSegmentation",
     "citation": "",
-    "containerId": "wipp/infer-ai-training:0.0.7",
+    "containerId": "wipp/infer-ai-training:0.0.6",
     "baseCommand": [
         "pytorch_models/INFER_inference.py"
     ],

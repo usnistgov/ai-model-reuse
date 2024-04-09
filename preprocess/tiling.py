@@ -45,8 +45,6 @@ def imgcrop(input, xPieces, yPieces, img_name, output_dir):
             a = im.crop(box)
             a.save(output_dir + "/" + img_name + "_" + str(i) + "-" + str(j) + file_extension)
             # TODO this change works here but has to be propagated to the stitching.py code
-            # col_id = str(j)
-            # col_id.rjust(xnum_digits, '0')
 
 
 def imgcrop_tomo(input, xPieces, yPieces, zPieces, img_name, output_dir):
@@ -117,7 +115,7 @@ def tile(image_dir_or_file, output_dir, xPieces, yPieces, zPieces=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='split', description='Script that tiles data')
+    parser = argparse.ArgumentParser(prog='tiling', description='Script that tiles data')
     parser.add_argument('-i', '--image_dir', type=str, help='folder path to input images')
     parser.add_argument('-o', '--output_dir', type=str, help='folder path to saving output tiles')
     parser.add_argument('-x', '--xPieces', type=int, help='number of image cuts along x-axis')

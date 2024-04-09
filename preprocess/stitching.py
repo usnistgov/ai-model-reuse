@@ -15,8 +15,8 @@ TODO: the tiling followed by stitching does not produce identical pixel sizes of
 This has to be fixed on the tiling side (tile size is a floor of dimensions (height = imgheight // yPieces) ).
 and in the stitching code (tiles are assumed to have the same dimensions as the first tile in the collection)
  
- __author__      = "Peter Bajcsy"
-__email__ = "peter.bajcsy@nist.gov"
+ __author__ = "Peter Bajcsy", "Pushkar Sathe"
+__email__   = "peter.bajcsy@nist.gov", "pushkar.sathe@nist.gov"
 """
 
 

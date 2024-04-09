@@ -7,11 +7,11 @@ import os
 import pandas as pd
 
 # calculation_types = [None, "inference_opposite_Evaluated", "infer_tile_images"]
-calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "training"]
 # calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "infer_tile_images_orig",
 #                      "training"]
 # calculation_types = ["inference_opposite_Evaluated_cumulative", "infer_tile_images_cumulative", "training"]
-# calculation_types = ["training"]
+# calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "training"]
+calculation_types = ["training"]
 
 lrlookup = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # TODO: needs a more flexible approach
 
@@ -153,17 +153,17 @@ if __name__ == "__main__":
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS/25/"
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS_size/5_1/"
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD34/MeasuredTrain"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/0-10_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/1-9_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/2-8_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/3-7_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/4-6_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/5-5_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/6-4_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/7-3_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/8-2_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/9-1_PBS-DD"
-    folderpath = "E:/Data/INFER/PBS/PBSDDS_5_10/Combined/10-0_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/0-10_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/1-9_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/2-8_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/3-7_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/4-6_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/5-5_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/6-4_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/7-3_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/8-2_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/9-1_PBS-DD"
+    folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/10-0_PBS-DD"
     foldernames = [
         # f"{folderpath}/H0",
         f"{folderpath}",
@@ -171,8 +171,8 @@ if __name__ == "__main__":
         # f"{folderpath}/H0Hdark",
         # f"{folderpath}/Hdark",
     ]
-    model_cstring = "pytorchOutputMtoM_INFER_final"
-    # model_cstring = "pytorchOutputMtoM_INFER_22924"
+    # model_cstring = "pytorchOutputMtoM_INFER_final"
+    model_cstring = "pytorchOutputMtoM_INFER_22924"
     for calculation_type in calculation_types:
         # for calculation_type in [None]:
         print("calculation type: ", calculation_type)

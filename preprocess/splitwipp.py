@@ -58,10 +58,11 @@ def main():
     parser.add_argument('-i', '--image_dir', type=str, help="full path of image folder")  #
     parser.add_argument('-m', '--mask_dir', type=str, help="full path of mask folder")
     parser.add_argument('-f', '--fraction', type=float, help="fraction in train")
-    parser.add_argument('-tri', '--trainImageDir', type=str, help="full path of train image folder destination")
-    parser.add_argument('-tei', '--testImageDir', type=str, help="full path of test image folder destination")
-    parser.add_argument('-trm', '--trainMaskDir', type=str, help="full path of train mask folder destination")
-    parser.add_argument('-tem', '--testMaskDir', type=str, help="full path of test mask folder destination")
+    parser.add_argument('-o', '--outputroot', type=str, help="root path for output")
+    parser.add_argument('-tri', '--trainImageDir', type=str, help="relative path to train image folder destination from outputroot")
+    parser.add_argument('-tei', '--testImageDir', type=str, help="relative path to image folder destination from outputroot")
+    parser.add_argument('-trm', '--trainMaskDir', type=str, help="relative path to train mask folder destination from outputroot")
+    parser.add_argument('-tem', '--testMaskDir', type=str, help="relative path to test mask folder destination from outputroot")
     args, unknown = parser.parse_known_args()
 
     if args.image_dir is None:
@@ -69,6 +70,10 @@ def main():
         return
     # print(args)
     # print(unknown)
+    args.trainImagedir = os.path.join(args.outputroot, args.trainImagedir)
+    args.trainMaskdir = os.path.join(args.outputroot, args.trainMaskdir)
+    args.testImagedir = os.path.join(args.outputroot, args.testImagedir)
+    args.testMaskdir = os.path.join(args.outputroot, args.testMaskdir)
     split(args.image_dir, args.mask_dir, args.trainImageDir, args.trainMaskDir,
           args.testImageDir, args.testMaskDir, args.fraction)
 

@@ -78,7 +78,7 @@ def record(epoch, output_filename):
                 elif isinstance(attr, int):
                     attrStr = ('{0:d}').format(attr)
                 elif isinstance(attr, str):
-                    attrStr = attr;
+                    attrStr = attr
                 elif sys.version_info[0] == 2:
                     if isinstance(attr, unicode):
                         attrStr = attr.encode('ascii', 'ignore')

@@ -15,6 +15,8 @@ The arguments refer to the number of cuts along x- and y-axes (xPieces and yPiec
 Thus, an input image of size 1024 x 1024 will be cut into tiles of size 512 x 512 with arguments
 --xPieces 2 --yPieces 2
 
+__author__  = "Pushkar Sathe"
+__email__   = "pushkar.sathe@nist.gov"
 """
 
 
@@ -121,6 +123,8 @@ def combine(image_dir, output_dir, xPieces, yPieces, zPieces=None, imaging_modes
     """
     Combines image sequences into stacks of dimensions (H,Ξ,X,Y) or (H,Ξ,X,Y,Z)
     """
+    print(f"Combining {image_dir} into {output_dir}, xPieces: {xPieces}, yPieces:{yPieces}."
+          f" Imaging Modes: {imaging_modes}")
     file_array, filename_array, xis, chs = [], [], [], []
     ext = None
     filenames = [f for f in os.listdir(image_dir) if not os.path.isdir(f) if f.__contains__(".tif")]
@@ -140,7 +144,7 @@ def combine(image_dir, output_dir, xPieces, yPieces, zPieces=None, imaging_modes
         if isinstance(imaging_modes, list):
             imaging_modes = [str(s) for s in imaging_modes]
             imaging_modes = [s.replace('Hdark', 'H1dark') for s in imaging_modes]
-            if len(imaging_modes)==1:
+            if len(imaging_modes) == 1:
                 imaging_modes = imaging_modes[0].split(" ")
         # elif isinstance(imaging_modes, str):
     # print(imaging_modes, ch in chss, ch in imaging_modes)
@@ -184,23 +188,25 @@ def combine(image_dir, output_dir, xPieces, yPieces, zPieces=None, imaging_modes
     tile(final_stack, savepath, xPieces, yPieces, ext=ext)
 
 
-def combine_subfolders(image_dir, output_dir, xPieces, yPieces, zPieces=None, usechannels=None, directory=False):
+def combine_subfolders(image_dir, output_dir, xPieces, yPieces, zPieces=None, usechannels=None):
     """
     It is assumed that the image_dir has a list of folders with names corresponding to mask names.
     Each folder contains a set of images that can be combined to obtain a single measurement.
     """
+    print(f"Combining {image_dir} into {output_dir}, xPieces: {xPieces}, yPieces:{yPieces}. usechannels: {usechannels}")
+    subdirs = False
     for name in os.listdir(image_dir):
         dirorfile = image_dir + "/" + name
-        if os.path.isdir(dirorfile):
+        # print(dirorfile)
+        if os.path.isdir(dirorfile):  # subdir
             combine(dirorfile, output_dir, xPieces, yPieces, imaging_modes=usechannels)
-        else:
-            directory = True
-    if directory:
+            subdirs = True
+    if not subdirs:
         combine(image_dir, output_dir, xPieces, yPieces, imaging_modes=usechannels)
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='split', description='Script that combines and tiles data')
+    parser = argparse.ArgumentParser(prog='combine_tile', description='Script that combines and tiles data')
     parser.add_argument('-i', '--image_dir', type=str, help='folder path to input images')
     parser.add_argument('-o', '--output_dir', type=str, help='folder path to saving output tiles')
     parser.add_argument('-c', '--channels', type=str, nargs='+', help='example input: ["H1dark"]')
@@ -212,9 +218,11 @@ def main():
     if args.image_dir is None:
         print('ERROR: missing input image dir ')
         return
-    isdirectory = os.path.isdir(args.image_dir)
+    # isdirectory = os.path.isdir(args.image_dir)
+    # print(isdirectory)
+    assert os.path.isdir(args.image_dir), "Image dir must be a directory"
     combine_subfolders(args.image_dir, args.output_dir, args.xPieces, args.yPieces, usechannels=args.channels,
-                       directory=isdirectory, zPieces=args.zPieces)
+                       zPieces=args.zPieces)
 
 
 if __name__ == "__main__":

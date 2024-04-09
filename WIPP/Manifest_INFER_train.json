@@ -1,6 +1,6 @@
 {
     "name": "INFER model training plugin",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "title": "INFER model training plugin",
     "description": "Plugin for training an AI model on INFER data",
     "author": "Pushkar Sathe",
@@ -8,7 +8,7 @@
     "repository": "https://github.com/usnistgov/ai-model-reuse",
     "website": "https://isg.nist.gov/deepzoomweb/data/inferSegmentation",
     "citation": "",
-    "containerId": "wipp/infer-ai-training:0.0.7",
+    "containerId": "wipp/infer-ai-training:0.0.6",
     "baseCommand": [
         "pytorch_models/INFER_train.py"
     ],
@@ -47,7 +47,7 @@
             "name": "modelWeights",
             "type": "genericData",
             "description": ".pt files",
-            "required": true
+            "required": false
         },
         {
             "name": "devicetype",

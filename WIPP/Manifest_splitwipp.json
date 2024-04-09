@@ -1,0 +1,84 @@
+{
+    "name": "Data split plugin",
+    "version": "0.0.5",
+    "title": "data split plugin",
+    "description": "Plugin for combining INFER images into stacks ",
+    "author": "Pushkar Sathe",
+    "institution": "National Institution of Standards and Technology",
+    "repository": "https://github.com/usnistgov/ai-model-reuse",
+    "website": "https://isg.nist.gov/deepzoomweb/data/inferSegmentation",
+    "citation": "",
+    "containerId": "wipp/infer-ai-training:0.0.7",
+    "baseCommand": [
+        "python",
+        "preprocess/split.py"
+    ],
+    "inputs": [
+        {
+            "name": "i",
+            "type": "collection",
+            "description": "Folder containing tiled images",
+            "required": true
+        },
+        {
+            "name": "m",
+            "type": "collection",
+            "description": "Folder containing tiled masks",
+            "required": true
+        },
+        {
+            "name": "f",
+            "type": "number",
+            "description": "Fraction of data that should go to training",
+            "required": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "trainImageDir",
+            "type": "collection",
+            "description": "Folder containing training images"
+        },
+        {
+            "name": "testImageDir",
+            "type": "collection",
+            "description": "Folder containing validation images"
+        },
+        {
+            "name": "trainMaskDir",
+            "type": "collection",
+            "description": "Folder containing training masks"
+        },
+        {
+            "name": "testMaskDir",
+            "type": "collection",
+            "description": "Folder containing validation masks"
+        }
+    ],
+    "ui": [
+        {
+            "key": "inputs.i",
+            "title": "Input images",
+            "description": "Folder containing tiled images",
+            "hidden": false
+        },
+        {
+            "key": "inputs.m",
+            "title": "Input masks",
+            "description": "Folder containing tiled masks",
+            "hidden": false
+        },
+        {
+            "key": "inputs.f",
+            "title": "Fraction",
+            "description": "Fraction of data in training",
+            "default": "0.8",
+            "hidden": false
+        }
+    ],
+    "resourceRequirements": {
+        "cpuAVX": false,
+        "cpuAVX2": false,
+        "gpu": false
+    }
+}
