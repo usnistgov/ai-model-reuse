@@ -25,14 +25,16 @@ def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test
     image_folder = os.path.abspath(image_folder)
     mask_folder = os.path.abspath(mask_folder)
     img_files = [f for f in os.listdir(mask_folder)]
+    print(len(img_files))
     random.shuffle(img_files)
     idx = int(fraction * len(img_files))
     train_img_files = img_files[0:idx]
     test_img_files = img_files[idx:]
-    # print(train_img_files, test_img_files)
+    print(train_img_files, test_img_files)
     for fn in train_img_files:
         file = os.path.join(image_folder, fn)
         mask_file = os.path.join(mask_folder, fn)
+        print(image_folder, mask_folder, fn)
         if os.path.isfile(file) and os.path.isfile(mask_file):
             if not os.path.exists(train_image_folder):
                 os.mkdir(train_image_folder)
@@ -59,23 +61,28 @@ def main():
     parser.add_argument('-m', '--mask_dir', type=str, help="full path of mask folder")
     parser.add_argument('-f', '--fraction', type=float, help="fraction in train")
     parser.add_argument('-o', '--outputroot', type=str, help="root path for output")
-    parser.add_argument('-tri', '--trainImageDir', type=str, help="relative path to train image folder destination from outputroot")
-    parser.add_argument('-tei', '--testImageDir', type=str, help="relative path to image folder destination from outputroot")
-    parser.add_argument('-trm', '--trainMaskDir', type=str, help="relative path to train mask folder destination from outputroot")
-    parser.add_argument('-tem', '--testMaskDir', type=str, help="relative path to test mask folder destination from outputroot")
+    parser.add_argument('-tri', '--trainImageDir', type=str,
+                        help="relative path to train image folder destination from outputroot")
+    parser.add_argument('-tei', '--testImageDir', type=str,
+                        help="relative path to image folder destination from outputroot")
+    parser.add_argument('-trm', '--trainMaskDir', type=str,
+                        help="relative path to train mask folder destination from outputroot")
+    parser.add_argument('-tem', '--testMaskDir', type=str,
+                        help="relative path to test mask folder destination from outputroot")
     args, unknown = parser.parse_known_args()
 
     if args.image_dir is None:
         print('ERROR: missing input image folder ')
         return
-    # print(args)
+    print(args)
     # print(unknown)
-    args.trainImagedir = os.path.join(args.outputroot, args.trainImagedir)
-    args.trainMaskdir = os.path.join(args.outputroot, args.trainMaskdir)
-    args.testImagedir = os.path.join(args.outputroot, args.testImagedir)
-    args.testMaskdir = os.path.join(args.outputroot, args.testMaskdir)
-    split(args.image_dir, args.mask_dir, args.trainImageDir, args.trainMaskDir,
-          args.testImageDir, args.testMaskDir, args.fraction)
+    trainImageDir = os.path.join(args.outputroot, args.trainImageDir)
+    trainMaskDir = os.path.join(args.outputroot, args.trainMaskDir)
+    testImageDir = os.path.join(args.outputroot, args.testImageDir)
+    testMaskDir = os.path.join(args.outputroot, args.testMaskDir)
+
+    print(args.image_dir, args.mask_dir, trainImageDir, trainMaskDir, testImageDir, testMaskDir)
+    split(args.image_dir, args.mask_dir, trainImageDir, trainMaskDir, testImageDir, testMaskDir, args.fraction)
 
 
 if __name__ == "__main__":

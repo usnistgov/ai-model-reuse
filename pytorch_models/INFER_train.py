@@ -18,7 +18,7 @@ from tqdm import tqdm
 from gpu_utilization import write_header
 from gpu_utilization import record
 from INFER_Dataset import GetDataloader
-
+# TODO: auto gpu or cpu
 
 def initializeModel(output_channels, pretrained, name, input_channels=252, bs=80, windowsize=200):
     model = None
@@ -30,6 +30,9 @@ def initializeModel(output_channels, pretrained, name, input_channels=252, bs=80
         combine = False
     if name == 'GRU_Tomo':
         model = GRU_3D_Model(input_size=input_channels, hidden_size=128, num_layers=2, num_classes=output_channels)
+        combine = False
+    if name == 'GRU_2D':
+        model = GRUModel(input_size=input_channels, hidden_size=128, num_layers=2, num_classes=output_channels)
         combine = False
     if name == 'Conv1d_Default':
         model = INFERFeatureExtractor1D(input_channels=input_channels, standalone=True, output_channels=output_channels)
@@ -364,9 +367,23 @@ def main():
             """
 
     data = args.data
-    if os.path.exists(args.trainImages) and os.path.exists(args.trainMasks) and os.path.exists(args.testImages) and os.path.exists(args.testMasks):
-        pass
-
+    print("args", args)
+    # trainImages = None
+    # trainMasks = None
+    # testImages = None
+    # testMasks = None
+    try:
+        if os.path.exists(args.trainImages) and os.path.exists(args.trainMasks) and os.path.exists(
+                args.testImages) and os.path.exists(args.testMasks):
+            trainImages = args.trainImages
+            trainMasks = args.trainMasks
+            testImages = args.testImages
+            testMasks = args.testMasks
+    except:
+        trainImages = os.path.join(data, args.trainImages)
+        trainMasks = os.path.join(data, args.trainMasks)
+        testImages = os.path.join(data, args.testImages)
+        testMasks = os.path.join(data, args.testMasks)
     dataloader_class = GetDataloader(data_dir=data,  # create class that contains the dataloaders and class weights
                                      train_image_folder=args.trainImages,
                                      train_mask_folder=args.trainMasks,
@@ -378,6 +395,8 @@ def main():
 
     seg_dataloader = dataloader_class.dataloaders  # grab dataloader from the class
     if len(seg_dataloader['Train']) < 1 or len(seg_dataloader['Test']) < 1:
+        print(trainImages, trainMasks, testImages, testMasks)
+        print(args.trainImages, args.trainMasks, args.testImages, args.testMasks)
         print('ERROR: could not find train or test data len(train):', len(seg_dataloader['Train']))
         print('len(test):', len(seg_dataloader['Test']))
 
@@ -413,7 +432,7 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learningRate)
 
     print('Starting training now')
-    print("Seg_dataloader: ", seg_dataloader)
+    print("Seg_dataloader: ", seg_dataloader, len(seg_dataloader['Train']), len(seg_dataloader['Test']))
     train_model(model, criterion, criterion_test, seg_dataloader, optimizer, bpath=outputDir, num_epochs=args.epochs,
                 devicetype=args.devicetype, metricsfile=args.metricsfile, mfn=args.modelWeights,
                 modelName=args.modelName, pretrained=args.pretrained, lr=args.learningRate, bs=args.batchsize,

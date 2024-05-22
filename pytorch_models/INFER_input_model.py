@@ -1,8 +1,10 @@
 import numpy as np
 import torch
 import model_analysis
-from torchsummaryX import summary as summaryX  #: For asserting model input output layer dimensions
-from torchsummary import summary  #: For asserting model input output layer dimensions
+
+
+# from torchsummaryX import summary as summaryX  #: For asserting model input output layer dimensions
+# from torchsummary import summary  #: For asserting model input output layer dimensions
 
 
 class INFERFeatureExtractor(torch.nn.Module):
@@ -128,7 +130,7 @@ class CombinedModel(torch.nn.Module):
         if segmentation_model is not None:
             self.segmentation_model = segmentation_model
         else:
-            self.segmentation_model = INFERDefaultModel(self.window_size, self.outputchannels, batch=batchsize)
+            self.segmentation_model = INFERDefaultModel(self.window_size, self.outputchannels)
 
         # print(f"Generated Combined model: {CombinedModel} "
         #       f"using FeatureExtractor: {self.feature_extractor} and Segmentation Model: {self.segmentation_model}")
@@ -203,21 +205,35 @@ class GRUModel(torch.nn.Module):  # TODO
         # downsampling
         self.down_conv = torch.nn.Conv2d(self.hidden_size, out_channels=16, kernel_size=3, padding=1, stride=2)
         # upsampling
-        self.up_conv = torch.nn.ConvTranspose2d(in_channels=16, out_channels=self.hidden_size, kernel_size=22, stride=2)
-        self.direct_conv = torch.nn.Conv2d(self.hidden_size, self.num_classes, kernel_size=1, stride=1, padding='same')
+        self.up_conv = torch.nn.ConvTranspose2d(in_channels=16, out_channels=self.hidden_size, kernel_size=6, stride=2,
+                                                padding=2)
+        self.direct_conv = torch.nn.Conv2d(self.hidden_size, self.hidden_size, kernel_size=1, stride=1, padding='same')
+        self.final_conv = torch.nn.Conv2d(self.hidden_size * 2, self.num_classes, kernel_size=1, stride=1,
+                                          padding='same')
 
     def forward(self, x):
         batchsize, xis, xs, ys = x.size()  # torch size not np
-        x = x.permute(0, 2, 3, 1)  # TODO x.view
-        x = x.reshape((batchsize, -1, xis))
-        x, hn = self.gru(x)  # xshape = (newbatchsize, xis, hiddensize)
+        x = x.view(batchsize, xis, -1)
         x = x.permute(0, 2, 1)
+        x, hn = self.gru(x)  # xshape = (newbatchsize, xis, hiddensize)
+        x = x.permute(0, 2, 1)  # bring back original order
         x = x.reshape(batchsize, self.hidden_size, xs, ys)
         downsampled = self.down_conv(x)
         downsampled = torch.nn.functional.relu(downsampled)
-        downsampled = self.up_conv(downsampled)
-        direct = self.conv(x)
-        x = downsampled + direct
+        upsampled = self.up_conv(downsampled)
+        direct = self.direct_conv(x)
+        x = torch.cat([upsampled, direct], dim=1)
+        # batchsize, xis, xs, ys = x.size()  # torch size not np
+        # x = x.permute(0, 2, 3, 1)
+        # x = x.reshape((batchsize, -1, xis))
+        # x, hn = self.gru(x)  # xshape = (newbatchsize, xis, hiddensize)
+        # x = x.permute(0, 2, 1)
+        # x = x.reshape(batchsize, self.hidden_size, xs, ys)
+        # downsampled = self.down_conv(x)
+        # downsampled = torch.nn.functional.relu(downsampled)
+        # downsampled = self.up_conv(downsampled)
+        # direct = self.direct_conv(x)
+        # x = downsampled + direct
         return x
 
 
@@ -243,17 +259,9 @@ class GRU_3D_Model(torch.nn.Module):  # TODO
 
     def forward(self, x):
         batchsize, xis, zs, xs, ys = x.size()  # torch size not np
-        # print(x.shape, flush=True)
-        # print(x)
         # x = x.permute(0, 2, 3, 4, 1)  # TODO x.view
-        # print(x.shape, flush=True)
-        # print(x)
-        # exit()
         x = x.view(batchsize, xis, -1)  # TODO x.view
         x = x.permute(0, 2, 1)
-        # print(x.shape, flush=True)
-
-        # x = x.reshape((batchsize, -1, xis))
         x, hn = self.gru(x)  # xshape = (newbatchsize, xis, hiddensize)
         # x = x.reshape(batchsize, zs, xs, ys, self.hidden_size)
         # print(x.shape, flush=True)
@@ -268,6 +276,7 @@ class GRU_3D_Model(torch.nn.Module):  # TODO
         # print(upsampled.shape, direct.shape, downsampled.shape)
         # print(batchsize, xis, zs, xs, ys)
         x = torch.cat([upsampled, direct], dim=1)
+        x = self.final_conv(x)
         return x
 
 

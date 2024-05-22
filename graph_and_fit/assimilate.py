@@ -6,18 +6,24 @@ import argparse
 import os
 import pandas as pd
 
-# calculation_types = [None, "inference_opposite_Evaluated", "infer_tile_images"]
+# calculation_types = ["training", "inference_opposite_Evaluated"]#, "infer_tile_images"]
+# calculation_types = ["training", "opposite_evaluated_cumulative", "infer_tile_images"]
+calculation_types = ["infer_tile_images"]
 # calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "infer_tile_images_orig",
 #                      "training"]
+# calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "infer_tile_images_pbs",
+#                      "training", "infer_tile_images_orig"]
 # calculation_types = ["inference_opposite_Evaluated_cumulative", "infer_tile_images_cumulative", "training"]
 # calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "training"]
-calculation_types = ["training"]
+# calculation_types = ["training"]
 
-lrlookup = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # TODO: needs a more flexible approach
+# lrlookup = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # TODO: needs a more flexible approach
+lrlookup = [1e-3, 1e-2]
 
-
-def getallcsvs(path):
-    allcsvs = [os.path.join(path, csvfile) for csvfile in os.listdir(path) if os.path.splitext(csvfile)[-1] == ".csv"]
+def getallcsvs(path, ignore_old=True):
+    allcsvs = [os.path.join(path, csfile) for csfile in os.listdir(path) if os.path.splitext(csfile)[-1] == ".csv"]
+    if ignore_old:
+        allcsvs = [cfile for cfile in allcsvs if not "old" in cfile]
     return allcsvs
 
 
@@ -31,11 +37,14 @@ def addallcolumns(columnlist, expt_folders, ms):
             if calculation_type == "training":
                 calcsubdir = subdir
             else:
-                calcsubdir = [os.path.join(subdir, calcsubdir) for calcsubdir in os.listdir(subdir) if
-                              calcsubdir.__contains__(calculation_type)]
+                calcsubdir = [os.path.join(subdir, c) for c in os.listdir(subdir) if
+                              c.__contains__(calculation_type)]
                 # print(calcsubdir)
-                assert len(
-                    calcsubdir) <= 1, f"multiple folders for same calculation type :'{calculation_type}' found :{calcsubdir}"
+                if len(calcsubdir) > 1:
+                    print(subdir, calcsubdir)
+                    calcsubdir = [os.path.join(subdir, c) for c in os.listdir(subdir) if
+                                  c == calculation_type]
+                    # , f"multiple folders for same calculation type :'{calculation_type}' found :{calcsubdir}"
                 print("CC", subdir, expt_folders)
                 [calcsubdir] = calcsubdir
             csvs = getallcsvs(calcsubdir)
@@ -73,7 +82,13 @@ def compile_folder(experiment_folders, model_substring, calculation_type="infere
             else:
                 calcsubdir = [os.path.join(subdir, calcsubdir) for calcsubdir in os.listdir(subdir) if
                               calcsubdir.__contains__(calculation_type)]
-                assert len(calcsubdir) == 1, f"multiple folders for same calculation type :'{calculation_type}' found"
+                # assert len(calcsubdir) == 1, f"multiple folders for same calculation type :'{calculation_type}' found"
+                if len(calcsubdir) > 1:
+                    print(subdir, calcsubdir)
+                    calcsubdir = [os.path.join(subdir, c) for c in os.listdir(subdir) if
+                                  c == calculation_type]
+                    # , f"multiple folders for same calculation type :'{calculation_type}' found :{calcsubdir}"
+
                 [calcsubdir] = calcsubdir
             csvs = getallcsvs(calcsubdir)
             print("csvs", calcsubdir)
@@ -153,17 +168,17 @@ if __name__ == "__main__":
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS/25/"
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS_size/5_1/"
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD34/MeasuredTrain"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/0-10_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/1-9_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/2-8_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/3-7_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/4-6_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/5-5_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/6-4_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/7-3_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/8-2_PBS-DD"
-    # folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/9-1_PBS-DD"
-    folderpath = "E:/Data/INFER/PBS/PBS_DDS_Clean_5_10/Combined/10-0_PBS-DD"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/0-10_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/1-9_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/2-8_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/3-7_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/4-6_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/5-5_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/6-4_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/7-3_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/8-2_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/9-1_PBS-DDS"
+    folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/10-0_PBS-DDS"
     foldernames = [
         # f"{folderpath}/H0",
         f"{folderpath}",
@@ -171,8 +186,8 @@ if __name__ == "__main__":
         # f"{folderpath}/H0Hdark",
         # f"{folderpath}/Hdark",
     ]
-    # model_cstring = "pytorchOutputMtoM_INFER_final"
-    model_cstring = "pytorchOutputMtoM_INFER_22924"
+    model_cstring = "pytorchOutputMtoM_INFER_final"
+    # model_cstring = "pytorchOutputMtoM_INFER_22924"
     for calculation_type in calculation_types:
         # for calculation_type in [None]:
         print("calculation type: ", calculation_type)

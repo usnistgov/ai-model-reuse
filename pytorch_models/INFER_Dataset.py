@@ -74,18 +74,8 @@ class INFERSegmentationDataset(VisionDataset):
             self.image_names = self.train_image_names
             self.mask_names = self.train_mask_names
             for mask_name in self.mask_names:
-                # with open(mask_name, "rb") as mask_file:
-                #     image = np.asarray(Image.open(mask_file))
-                #
-                #     for h in range(image.shape[0]):
-                #         for w in range(image.shape[1]):
-                #             value = image[h][w]
-                #             weights[value] += 1
-
                 image = np.asarray(Image.open(mask_name))
-                # print(np.unique(image))
                 for i in range(len(weights)):
-                    # print(len(weights), i, image.max(), image.min(), flush=True)
                     weights[i] += np.count_nonzero(image == i)
 
             self.weights = weights
@@ -96,12 +86,6 @@ class INFERSegmentationDataset(VisionDataset):
 
     def __len__(self) -> int:
         return len(self.image_names)
-
-    # @staticmethod
-    # def format_image(x):
-    #     # reshape into tensor (CHW)
-    #     x = np.transpose(x, [2, 0, 1])
-    #     return x
 
     @staticmethod
     def zscore_normalize(x):

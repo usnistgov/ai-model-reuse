@@ -46,22 +46,22 @@ def createDeepLabv3(outputchannels=1):
     return model
 
 
-# def confusion_matrix(predictions, masks, classes):
-#     matrix = np.zeros((classes, classes))
-#     for h in range(predictions.shape[0]):
-#         for w in range(predictions.shape[1]):
-#             matrix[predictions[h][w]][masks[h][w]] += 1
-#
-#     # for i in range(predictions.shape[0]):
-#     #     pred = torch.argmax(predictions[i], 0)
-#     #     pred = pred.cpu().detach().numpy().astype(np.uint8)
-#     #     mask = torch.squeeze(masks[i], 0)
-#     #     mask = mask.cpu().detach().numpy().astype(np.uint8)
-#     #     for h in range(pred.shape[0]):
-#     #         for w in range(pred.shape[1]):
-#     #             matrix[pred[h][w]][mask[h][w]] += 1
-#     return matrix
-#
+def confusion_matrix(predictions, masks, classes):
+    matrix = np.zeros((classes, classes))
+    for h in range(predictions.shape[0]):
+        for w in range(predictions.shape[1]):
+            matrix[predictions[h][w]][masks[h][w]] += 1
+
+    # for i in range(predictions.shape[0]):
+    #     pred = torch.argmax(predictions[i], 0)
+    #     pred = pred.cpu().detach().numpy().astype(np.uint8)
+    #     mask = torch.squeeze(masks[i], 0)
+    #     mask = mask.cpu().detach().numpy().astype(np.uint8)
+    #     for h in range(pred.shape[0]):
+    #         for w in range(pred.shape[1]):
+    #             matrix[pred[h][w]][mask[h][w]] += 1
+    return matrix
+
 
 ''' 
 run inference with model_filemath on images in image_filepath and 
@@ -69,8 +69,8 @@ save results in output_dir
 '''
 
 
-def inference(modelFilepath, image_filepath, output_dir):
-    model = torch.load(modelFilepath)
+def inference(model_filepath, image_filepath, output_dir):
+    model = torch.load(model_filepath)
     model.eval()
     file_array = []
     for filename in os.listdir(image_filepath):
@@ -123,10 +123,10 @@ run inference and compute the accuracy against the ground truth mask
 '''
 
 
-def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes, output_dir, use_avgs=False):
+def inference_withmask(model_filepath, image_filepath, mask_filepath, num_classes, output_dir, use_avgs=True):
     start_time = time.time()
     print(f"Use averages = {use_avgs}")
-    model = torch.load(modelFilepath)
+    model = torch.load(model_filepath)
     model.eval()
     file_array = []
     for filename in os.listdir(image_filepath):
@@ -145,7 +145,6 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
     PCM = None
     known_labels = []
     cumulative_PCM = None
-    layer = None
     for i in range(len(file_array)):
         image_basename = os.path.basename(file_array[i])
         found_match = False
@@ -162,28 +161,27 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
 
         # load intensity image
         image = skimage.io.imread(file_array[i])
-
         image = image.astype(np.float32)
         if INFER_Dataset.INFERSegmentationDataset.use_normalization == "zscore_normalize":
             image = INFER_Dataset.INFERSegmentationDataset.zscore_normalize(image)
-
         img = torch.from_numpy(image)
         img = torch.unsqueeze(img, 0)
         img = img.type(torch.cuda.FloatTensor)
-        layers = model_analysis.get_layerweights(model)
+        # layers = model_analysis.get_layerweights(model)
         pred = model(img)
-        layer_len = len(layers)
-        assert layer_len > 0, "layers list is empty"
-        if layer_len > 1:
-            print(layer_len)
-        layer = layers.pop()
         pred = torch.squeeze(pred, 0)
         pred = torch.argmax(pred, 0)
         pred = pred.cpu().detach().numpy().astype(np.uint8)
         gt_mask = skimage.io.imread(mask_file_array[match_index]).astype(np.uint8)
         assert gt_mask.shape == pred.shape
         gt_mask_flat, pred_flat = gt_mask.flatten(), pred.flatten()
-
+        # layer_len = len(layers)
+        # assert layer_len > 0, "layers list is empty"
+        # if layer_len > 1:
+            # print(layer_len)
+        # layer = layers.pop()
+        # print(type(layer), layer.shape, end="\t", flush=True)
+        # print(end=".",flush=True)
         if use_avgs:
             precision_score, recall_score, accuracy_score, f1_score, jaccard_score, dice_score, mse, _, adjrand = \
                 segm_comp.metrics_masks(mask_file_array[match_index], pred, gt_mask, num_classes, output_dir)
@@ -215,18 +213,18 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         # TODO disabled for INFER numerical evaluations - should be enabled in the future
         basename = os.path.basename(file_array[i])
         output_fullpath = str(output_dir) + "/pred_{}".format(basename)
-        # outgparent = os.path.dirname()
-        outparent, outbasename = os.path.split(output_dir)
-        fe_dir = outparent + f"_fe/"
-        if not os.path.exists(fe_dir):
-            os.mkdir(fe_dir)
-        fe_subdir = fe_dir + f"/{outbasename}"
-        if not os.path.exists(fe_subdir):
-            os.mkdir(fe_subdir)
-        fe_fullpath = f"/{fe_subdir}/fe_{basename}"
-        # print('done:', basename, end='\t')
+        # outparent, outbasename = os.path.split(output_dir)
+        # fe_dir = outparent + f"_fe/"
+        # if not os.path.exists(fe_dir):
+            # os.mkdir(fe_dir)
+        # fe_subdir = fe_dir + f"/{outbasename}"
+        # if not os.path.exists(fe_subdir):
+            # os.mkdir(fe_subdir)
+        # fe_fullpath = f"/{fe_subdir}/fe_{basename}"
+        # print('done:', basename, end='\t', flush=True)
         skimage.io.imsave(output_fullpath, pred)
-        skimage.io.imsave(fe_fullpath, layer)
+        #skimage.io.imsave(fe_fullpath, layer)
+        #del layers, layer, pred, img
     if len(file_array) > 0:
         MCM_combined, sorted_labels = segm_comp.getMCMfromDict(labelwiseMCM=labelwise_MCM)
         if use_avgs:
@@ -294,45 +292,45 @@ def main():
     # print('hello')
     parser = argparse.ArgumentParser(prog='inference',
                                      description='Script which performs inference using models in torchvision library')
-    parser.add_argument('--modelFilepath', required=True,
+    parser.add_argument('--model_filepath', required=True,
                         type=str)  # this should be FULL PATH of the weights.pt file you generated from train.py
-    parser.add_argument('--imageDirpath', required=True,
+    parser.add_argument('--image_dirpath', required=True,
                         type=str)  # this should be FULL PATH of your images to perform inference on
-    parser.add_argument('--maskDirpath', required=False, default=None,
+    parser.add_argument('--mask_dirpath', required=False, default=None,
                         type=str)  # FULL PATH of your masks to compare images with for accuracy
-    parser.add_argument('--maskNumClasses', required=False, default=-1,
+    parser.add_argument('--mask_numclasses', required=False, default=-1,
                         type=int)  # number of classes in ground truth masks
-    parser.add_argument('--outputDirpath', required=True,
+    parser.add_argument('--output_dirpath', required=True,
                         type=str)  # this should be FULL PATH of where you want to store your predictions
 
     args, unknown = parser.parse_known_args()
 
-    if args.modelFilepath is None:
-        print('ERROR: missing input modelFilepath')
+    if args.model_filepath is None:
+        print('ERROR: missing input model_filepath')
         return
 
-    if args.imageDirpath is None:
-        print('ERROR: missing input imageDirpath')
+    if args.image_dirpath is None:
+        print('ERROR: missing input image_dirpath')
         return
 
-    print('modelFilepath:', args.modelFilepath)
-    print('imageDirpath:', args.imageDirpath)
-    print('maskDirpath:', args.maskDirpath)
-    print('outputDirpath:', args.outputDirpath)
+    print('model_filepath:', args.model_filepath)
+    print('image_dirpath:', args.image_dirpath)
+    print('mask_dirpath:', args.mask_dirpath)
+    print('output_dirpath:', args.output_dirpath)
 
-    if not os.path.exists(args.outputDirpath):
-        Path(args.outputDirpath).mkdir()
+    if not os.path.exists(args.output_dirpath):
+        Path(args.output_dirpath).mkdir()
 
-    if args.maskDirpath is None:
-        inference(args.modelFilepath, args.imageDirpath, args.outputDirpath)
+    if args.mask_dirpath is None:
+        inference(args.model_filepath, args.image_dirpath, args.output_dirpath)
     else:
-        print('maskDirpath:', args.maskDirpath)
-        if args.maskNumClasses < 0:
-            print('ERROR: missing input maskNumClasses !!!')
+        print('mask_dirpath:', args.mask_dirpath)
+        if args.mask_numclasses < 0:
+            print('ERROR: missing input mask_numclasses !!!')
             return
-        print('maskNumClasses:', args.maskNumClasses)
-        inference_withmask(args.modelFilepath, args.imageDirpath, args.maskDirpath, args.maskNumClasses,
-                           args.outputDirpath)
+        print('mask_numclasses:', args.mask_numclasses)
+        inference_withmask(args.model_filepath, args.image_dirpath, args.mask_dirpath, args.mask_numclasses,
+                           args.output_dirpath)
 
 
 if __name__ == "__main__":
