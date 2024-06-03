@@ -7,8 +7,10 @@ from torchvision import transforms
 
 import segdataset
 
+
 class GetDataloader():
-    def __init__(self,data_dir,train_image_folder,train_mask_folder, test_image_folder, test_mask_folder, fraction,batch_size, n_classes):
+    def __init__(self, data_dir, train_image_folder, train_mask_folder, test_image_folder, test_mask_folder, fraction,
+                 batch_size, n_classes):
         self.data_dir = data_dir
         self.train_image_folder = train_image_folder
         self.train_mask_folder = train_mask_folder
@@ -16,7 +18,7 @@ class GetDataloader():
         self.test_mask_folder = test_mask_folder
         self.fraction = fraction
         self.batch_size = batch_size
-        self.n_classes=n_classes
+        self.n_classes = n_classes
         # data_transforms = transforms.Compose([transforms.ToTensor(),
         #                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
         data_transforms = transforms.Compose([transforms.ToTensor()])
@@ -41,5 +43,3 @@ class GetDataloader():
             for x in ['Train', 'Test']
         }
         self.dataloaders = dataloaders
-
-

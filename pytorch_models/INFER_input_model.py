@@ -44,15 +44,13 @@ class INFERFeatureExtractor(torch.nn.Module):
 class INFERFeatureExtractor1D(torch.nn.Module):
     """
     This model is made for the purpose of using 3 dimensional data as inputs
-    where the last 2 dimensions are X and Y axes of images.
-    TODO: add support for upto 5 dimensions.
-
+    where the last 2 dimensions are X and Y axes of images for the purpose of
     concatenating with other publicly available models.
-    This model is not intented to be used on its own
+    This model is not intended to be used on its own
 
     """
 
-    def __init__(self, input_channels, standalone=True, output_channels=3):
+    def __init__(self, input_channels, output_channels=3):
         super(INFERFeatureExtractor1D, self).__init__()
         self.input_channels = input_channels
         self.output_channels = output_channels
@@ -99,10 +97,8 @@ class INFERDefaultModel(torch.nn.Module):
         self.activation1 = torch.nn.Sigmoid()
 
     def forward(self, x):
-        # print(f"input: {x.shape}")
         x = self.layer1(x)
         x = self.activation1(x)
-        # print(f"output: {x.shape}")
         return x
 
 
@@ -223,6 +219,7 @@ class GRUModel(torch.nn.Module):  # TODO
         upsampled = self.up_conv(downsampled)
         direct = self.direct_conv(x)
         x = torch.cat([upsampled, direct], dim=1)
+        x = self.final_conv(x)
         # batchsize, xis, xs, ys = x.size()  # torch size not np
         # x = x.permute(0, 2, 3, 1)
         # x = x.reshape((batchsize, -1, xis))

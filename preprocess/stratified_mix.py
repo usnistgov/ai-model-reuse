@@ -17,7 +17,7 @@ Generated_DD                            Generated_PBS
     |-------->test_images                   |-------->test_images
     |-------->test_masks                    |-------->test_masks
     
-The Results will be combned into a new folder 
+The Results will be combined into a new folder 
 Combined/3-7_PBS-DD
             |-------->train_images
             |-------->train_masks
@@ -33,12 +33,14 @@ __email__  = "pushkar.sathe@nist.gov"
 
 def percentage_to_simplest_fraction(percent):
     print(percent, type(percent))  # must be int or fraction. Floats aren't always rational
-    fraction = Fraction(numerator=int(percent), denominator=100).limit_denominator(100)
+    fraction = Fraction(numerator=round(percent), denominator=100).limit_denominator(100)
     simple_numerator = fraction.numerator
     simple_denominator = fraction.denominator
+    assert(fraction.denominator >= fraction.numerator)
     if fraction.numerator + fraction.denominator < 10:
         x = fraction.numerator + fraction.denominator
-        closest_multiple = math.ceil(10 / x)
+        # fraction.numerator + (fraction.denominator - fraction.numerator)
+        closest_multiple = math.ceil(10 / fraction.denominator)
         simple_numerator = fraction.numerator * closest_multiple
         simple_denominator = fraction.denominator * closest_multiple
         print("fraction:", x, closest_multiple, fraction)
@@ -82,7 +84,7 @@ def stratify_and_mix(src_folder1, src_folder2, trainortest, selected_percentage,
         # total_files = len(files[files[f"{0}_{traintest}_{suffixes[0]}"]]) + len(files[files[f"{1}_{traintest}_{suffix}"]])
         random.shuffle(all_filenames[f"{i}_{trainortest}_{suffixes[0]}"])
         print(f"Selecting {percentages[i]} percent from {src_folder}")
-        usefraction = int(percentages[i] / 100 * total_files)
+        usefraction = round(percentages[i] / 100 * total_files)
         print(percentages[i] / 100 * total_files, usefraction)
         n_select_masks = all_filenames[f"{i}_{trainortest}_{suffixes[0]}"][:usefraction]
         n_select_images = all_filenames[f"{i}_{trainortest}_{suffixes[0]}"][:usefraction]  # use same filenames
@@ -91,7 +93,7 @@ def stratify_and_mix(src_folder1, src_folder2, trainortest, selected_percentage,
         selected_masks.extend(os.path.join(src_mask_folder, f) for f in n_select_masks)
         selected_images.extend(os.path.join(src_images_folder, f) for f in n_select_images)
 
-    # n_select_from_folder1 = int(total_files * ratio / 100)
+    # n_select_from_folder1 = round(total_files * ratio / 100)
     assert len(selected_masks) == total_files, f"Total files {total_files}, {len(n_select_masks)}"
     assert len(selected_images) == total_files, f"Total files {total_files}, {len(n_select_images)}"
 

@@ -21,38 +21,42 @@ according to the split fraction
 
 def split(image_folder, mask_folder, train_image_folder, train_mask_folder, test_image_folder, test_mask_folder,
           fraction):
-    # TODO: Currently naming files as ".tif" and ".tiff" doesnt match. Add handling for this and other extension types
     image_folder = os.path.abspath(image_folder)
     mask_folder = os.path.abspath(mask_folder)
     img_files = [f for f in os.listdir(mask_folder)]
-    print(len(img_files))
     random.shuffle(img_files)
     idx = int(fraction * len(img_files))
     train_img_files = img_files[0:idx]
     test_img_files = img_files[idx:]
-    print(train_img_files, test_img_files)
+    if not os.path.exists(train_image_folder):
+        os.mkdir(train_image_folder)
+    if not os.path.exists(train_mask_folder):
+        os.mkdir(train_mask_folder)
+    if not os.path.exists(test_image_folder):
+        os.mkdir(test_image_folder)
+    if not os.path.exists(test_mask_folder):
+        os.mkdir(test_mask_folder)
+    # print(train_img_files, test_img_files)
     for fn in train_img_files:
+        basename, ext = os.path.splitext(fn)
         file = os.path.join(image_folder, fn)
-        mask_file = os.path.join(mask_folder, fn)
-        print(image_folder, mask_folder, fn)
-        if os.path.isfile(file) and os.path.isfile(mask_file):
-            if not os.path.exists(train_image_folder):
-                os.mkdir(train_image_folder)
-            if not os.path.exists(train_mask_folder):
-                os.mkdir(train_mask_folder)
-            copyfile(file, "{}/{}".format(train_image_folder, fn))
-            copyfile(mask_file, "{}/{}".format(train_mask_folder, fn))
+        if ext.lower() in [".tif", ".tiff"]:
+            for mask_ext in [".tif", ".tiff"]:
+                mask_file = os.path.join(mask_folder, f"{basename}.{mask_ext}")
+                if os.path.isfile(file) and os.path.isfile(mask_file):
+                    copyfile(file, "{}/{}".format(train_image_folder, f"{basename}.tif"))
+                    copyfile(mask_file, "{}/{}".format(train_mask_folder, f"{basename}.tif"))
+                    break
 
     for fn in test_img_files:
+        basename, ext = os.path.splitext(fn)
         file = os.path.join(image_folder, fn)
-        mask_file = os.path.join(mask_folder, fn)
-        if os.path.isfile(file) and os.path.isfile(mask_file):
-            if not os.path.exists(test_image_folder):
-                os.mkdir(test_image_folder)
-            if not os.path.exists(test_mask_folder):
-                os.mkdir(test_mask_folder)
-            copyfile(file, "{}/{}".format(test_image_folder, fn))
-            copyfile(mask_file, "{}/{}".format(test_mask_folder, fn))
+        if ext.lower() in [".tif", ".tiff"]:
+            for mask_ext in [".tif", ".tiff"]:
+                mask_file = os.path.join(mask_folder, f"{basename}.{mask_ext}")
+                if os.path.isfile(file) and os.path.isfile(mask_file):
+                    copyfile(file, "{}/{}".format(test_image_folder, f"{basename}.tif"))
+                    copyfile(mask_file, "{}/{}".format(test_mask_folder, f"{basename}.tif"))
 
 
 def main():
@@ -75,7 +79,9 @@ def main():
         print('ERROR: missing input image folder ')
         return
     print(args)
-    # print(unknown)
+    # COMMENT: In WIPP we cannot write to a folder with masks and images.
+    # Therefore we have to create a separate parent directory.
+    # This is the primary difference between split.py and splitwipp.py
     trainImageDir = os.path.join(args.outputroot, args.trainImageDir)
     trainMaskDir = os.path.join(args.outputroot, args.trainMaskDir)
     testImageDir = os.path.join(args.outputroot, args.testImageDir)

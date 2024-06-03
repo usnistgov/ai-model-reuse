@@ -15,7 +15,7 @@ import skimage
 """
 This class will stitch tiles in the input folder into a mosaic of tiles saved as one image in the output folder.
 
-The stitching assumes that the tiles were created by the tiling.py code.
+The stitching assumes that the tiles were created by the tiling.py code and/or the combine_and_tile.py code.
 
 TODO: the tiling followed by stitching does not produce identical pixel sizes of the stiched images as the original images
 This has to be fixed on the tiling side (tile size is a floor of dimensions (height = imgheight // yPieces) ).
@@ -59,13 +59,6 @@ def stitch_subfolders(image_dir, output_dir, tomo=None):
             dirpath = os.path.join(image_dir, dirname)
             if not os.path.isdir(dirpath):
                 if dirpath.__contains__(".tif"):
-                    # if tomo is None:
-                    #     stitch(image_dir, output_dir)
-                    #     print("tomo not selected")
-                    # else:
-                    #     print("tomo selected")
-                    #     stitch_tomo(image_dir, output_dir)
-                    # else:
                     continue
             else:
                 model_image_dir = dirpath
@@ -74,9 +67,6 @@ def stitch_subfolders(image_dir, output_dir, tomo=None):
                 print('model_output_dir:', model_output_dir)
                 # if tomo is None:
                 stitch(model_image_dir, model_output_dir)
-                # else:
-                #     print("tomo selected1", model_image_dir)
-                #     stitch_tomo(model_image_dir, model_output_dir)
     else:  # assume tomo doesnt use subfolders
         stitch_tomo(image_dir, output_dir)
         # print(tomo)
@@ -268,7 +258,7 @@ def main():
     parser = argparse.ArgumentParser(prog='stitch', description='Script that stitches tiled images')
     parser.add_argument('--image_dir', type=str, help='folder path to a set of sub-folders with input tiled images')
     parser.add_argument('--output_dir', type=str, help='folder path to saving output stitched images')
-    parser.add_argument('--tomo', type=str, nargs="+", help='folder path to saving output stitched images')
+    parser.add_argument('--tomo', type=bool, help='Whether or not image is tomographic')
 
     # parser.add_argument('--xPieces', type=int, help='number of image cuts along x-axis')
     # parser.add_argument('--yPieces', type=int, help='number of image cuts along y-axis')

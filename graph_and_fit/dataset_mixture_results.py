@@ -176,7 +176,7 @@ def read_and_plot(path, savename):
         plt.close()
 
 
-def main():
+def main(): # TODO argparse
     if xaxis_key == "checker size":
         synthetic_inference = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS_size/infer_tile_images_cumulative_size_all.xlsx"
         synthetic_inference_orig = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS_size/infer_tile_images_cumulative_orig_size_all.xlsx"

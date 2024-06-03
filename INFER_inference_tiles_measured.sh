@@ -22,7 +22,7 @@ if [ ! -d $stitch_output_directory ]; then
   mkdir -p $stitch_output_directory
 fi
 
-source inference_many_models_INFER.sh ${model_directory} ${tiled_image_directory} ${tiled_mask_directory} ${infer_output_directory}
+source INFER_inference_many_models.sh ${model_directory} ${tiled_image_directory} ${tiled_mask_directory} ${infer_output_directory}
 
 cd preprocess
 source INFER_one_dataset_stitch.sh ${infer_output_directory} ${stitch_output_directory}

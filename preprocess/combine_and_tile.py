@@ -144,6 +144,7 @@ def combine(image_dir, output_dir, xPieces, yPieces, zPieces=None, imaging_modes
         if isinstance(imaging_modes, list):
             imaging_modes = [str(s) for s in imaging_modes]
             imaging_modes = [s.replace('Hdark', 'H1dark') for s in imaging_modes]
+            imaging_modes = [s.replace('DF', 'H1dark') for s in imaging_modes]
             if len(imaging_modes) == 1:
                 imaging_modes = imaging_modes[0].split(" ")
         # elif isinstance(imaging_modes, str):

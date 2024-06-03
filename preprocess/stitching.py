@@ -9,13 +9,13 @@ import argparse
 """
 This class will stitch tiles in the input folder into a mosaic of tiles saved as one image in the output folder.
 
-The stitching assumes that the tiles were created by the tiling.py code.
+The stitching assumes that the tiles were created by the tiling.py code and/or the combine_and_tile.py code.
 
 TODO: the tiling followed by stitching does not produce identical pixel sizes of the stiched images as the original images
 This has to be fixed on the tiling side (tile size is a floor of dimensions (height = imgheight // yPieces) ).
 and in the stitching code (tiles are assumed to have the same dimensions as the first tile in the collection)
  
- __author__ = "Peter Bajcsy", "Pushkar Sathe"
+__author__ = "Peter Bajcsy", "Pushkar Sathe"
 __email__   = "peter.bajcsy@nist.gov", "pushkar.sathe@nist.gov"
 """
 

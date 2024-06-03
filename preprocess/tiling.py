@@ -49,8 +49,8 @@ def imgcrop(input, xPieces, yPieces, img_name, output_dir):
 
 def imgcrop_tomo(input, xPieces, yPieces, zPieces, img_name, output_dir):
     im = tifffile.tifffile.imread(input)
-    im2 = Image.open(input)
-    print("tomo shape ", im.shape)
+    # im2 = Image.open(input)
+    print("tomography image shape ", im.shape)
     # print("Image.open: ", im2.size)
     img_name, file_extension = os.path.splitext(img_name)
     dims = im.ndim

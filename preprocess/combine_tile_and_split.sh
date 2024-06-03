@@ -32,7 +32,7 @@ if [ ! -d ${root_folder}"/"${ch} ]; then
 	mkdir ${root_folder}"/"${ch}
   fi
 
-
+# combine_and_tile treats dimensions as sequence,
 #inputs_maindir=${root_folder}"/"${image_input_folder}
 python combine_and_tile.py --image_dir=${root_folder}"/"${image_input_folder} --output_dir=${root_folder}"/"${ch}"/tiled_images" --channels $channels --xPieces=${xPieces} --yPieces=${yPieces}
 python tiling.py --image_dir=${root_folder}"/"${mask_input_folder} --output_dir=${root_folder}"/"${ch}"/tiled_masks" --xPieces=${xPieces} --yPieces=${yPieces}

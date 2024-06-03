@@ -8,7 +8,8 @@ import pandas as pd
 
 # calculation_types = ["training", "inference_opposite_Evaluated"]#, "infer_tile_images"]
 # calculation_types = ["training", "opposite_evaluated_cumulative", "infer_tile_images"]
-calculation_types = ["infer_tile_images"]
+# calculation_types = ["infer_tile_images"]
+# calculation_types = ["training", "opposite_evaluated_cumulative"]
 # calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "infer_tile_images_orig",
 #                      "training"]
 # calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "infer_tile_images_pbs",
@@ -20,6 +21,7 @@ calculation_types = ["infer_tile_images"]
 # lrlookup = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # TODO: needs a more flexible approach
 lrlookup = [1e-3, 1e-2]
 
+
 def getallcsvs(path, ignore_old=True):
     allcsvs = [os.path.join(path, csfile) for csfile in os.listdir(path) if os.path.splitext(csfile)[-1] == ".csv"]
     if ignore_old:
@@ -27,7 +29,7 @@ def getallcsvs(path, ignore_old=True):
     return allcsvs
 
 
-def addallcolumns(columnlist, expt_folders, ms):
+def addallcolumns(columnlist, expt_folders, ms, calculation_type):
     newlist = []
     for folder in expt_folders:
         channel = os.path.basename(folder)
@@ -67,7 +69,7 @@ def addallcolumns(columnlist, expt_folders, ms):
 def compile_folder(experiment_folders, model_substring, calculation_type="inference"):
     origcolumns = ['channel', 'modelname', 'sampletype', 'instrument', 'lr', 'pretrained', 'precision', 'recall',
                    'accuracy', 'F1-Score', 'Dice', 'Jaccard', 'MSE']
-    columns = addallcolumns(origcolumns.copy(), experiment_folders, model_substring)
+    columns = addallcolumns(origcolumns.copy(), experiment_folders, model_substring, calculation_type)
     combined = pd.DataFrame(columns=columns)
     # print(columns)
     c_row = 0
@@ -152,18 +154,20 @@ def compile_folder_train(experiment_folders, model_substring):
     return combined
 
 
-if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(prog='split',
-    #                                  description='Script that renames image files according to mask files')
-    # parser.add_argument('--foldernames', type=str, nargs='+', help='full path of main folder folder')
-    # parser.add_argument('--model_folder_substring', type=str,
-    #                     help='substring uniquely contained in names of all model folders')
-    #
-    # args, unknown = parser.parse_known_args()
-    #
-    # if args.foldername is None:
-    #     print('ERROR: missing input mask folder ')
-    # foldernames = args.foldernames
+def main():
+    parser = argparse.ArgumentParser(prog='split',
+                                     description='Script that renames image files according to mask files')
+    parser.add_argument('--foldernames', type=str, nargs='+', help='full path of main folder folder')
+    parser.add_argument('--calculation_types', type=str, nargs='+', default='training',
+                        help='csv name. training and inference results are treated differently, list all folder name substrings. e.g. inference_opposite_evaluated')
+    parser.add_argument('--model_cstring', type=str, default="pytorchOutputMtoM_INFER_final",
+                        help='substring uniquely contained in names of all model folders')
+
+    args, unknown = parser.parse_known_args()
+
+    if args.foldername is None:
+        print('ERROR: missing input mask folder ')
+    foldernames = args.foldernames
     # model_cstring = args.substring
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS/25/"
     # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS_size/5_1/"
@@ -186,8 +190,8 @@ if __name__ == "__main__":
         # f"{folderpath}/H0Hdark",
         # f"{folderpath}/Hdark",
     ]
-    model_cstring = "pytorchOutputMtoM_INFER_final"
-    # model_cstring = "pytorchOutputMtoM_INFER_22924"
+    model_cstring = args.model_cstring
+    calculation_types = args.calculation_types
     for calculation_type in calculation_types:
         # for calculation_type in [None]:
         print("calculation type: ", calculation_type)
@@ -200,3 +204,7 @@ if __name__ == "__main__":
         if df is not None:
             df.to_excel(os.path.join(folderpath, f"{calculation_type}_dic.xlsx"))
             # df.to_csv(os.path.join(folderpath, f"{calculation_type}_dic.csv"))
+
+
+if __name__ == "__main__":
+    main()

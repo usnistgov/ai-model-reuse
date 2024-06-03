@@ -179,7 +179,6 @@ def metrics_masks(gt_file_name, pred_mask, gt_mask, num_classes, output_dir):
         labelwise_dice[f'{label}'] = (2 * labelwise_jaccard[l]) / (labelwise_jaccard[l] + 1)
 
     jaccard_coeff = jaccard_score(gt_mask.flatten(), pred_mask.flatten(), average='micro')
-    # TODO: Adjusted Rand Index
     adjrand = adjusted_rand_score(labels_true=gt_mask.flatten(), labels_pred=pred_mask.flatten())
     dice_coeff = (2 * jaccard_coeff) / (jaccard_coeff + 1)
     mse_coeff = mean_squared_error(gt_mask.flatten(), pred_mask.flatten())

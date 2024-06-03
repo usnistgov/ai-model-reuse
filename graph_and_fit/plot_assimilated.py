@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 def plot_inference_data(df_name, title, savepath, metric='Dice', xaxis_key="channel"):
     df = pd.read_excel(df_name)
     print(df.head())
+    print(df[metric])
     idx = df.groupby("channel")["Dice"].idxmax()
     selected_df = df.loc[idx]
     print(selected_df.head())
@@ -35,8 +36,8 @@ if __name__ == "__main__":
     dds_smallchecker = "infer_tile_images_cumulative_all.xlsx"
     dds_orig = "infer_tile_images_orig_all.xlsx"
     pbs = "infer_tile_images_pbs_all.xlsx"
-    measured = "opposite_evaluated_cumulative_all.xlsx"
-    training = "training_dic_best.xlsx"
+    measured = "opposite_evaluated_cumulative_best.xlsx"
+    training = "training_all.xlsx"
     inference_dds_small = os.path.join(path, dds_smallchecker)
     # inference_dds_orig = os.path.join(path, dds_orig)
     inference_pbs = os.path.join(path, pbs)
@@ -45,11 +46,11 @@ if __name__ == "__main__":
     save_path = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/plots"
     # plot_inference_data(inference_pbs, title="Inference: physics based simulation",
     #                     savepath=f"{save_path}/{os.path.splitext(pbs)[0]}.png")
-    # plot_inference_data(inference_measured, title="Inference: measured data",
-    #                     savepath=f"{save_path}/{os.path.splitext(measured)[0]}.png")
-    plot_inference_data(inference_dds_small, title="Inference: Datadriven simulation",
-                        savepath=f"{save_path}/{os.path.splitext(dds_smallchecker)[0]}.png")
+    plot_inference_data(inference_measured, title="Inference: measured data",
+                        savepath=f"{save_path}/{os.path.splitext(measured)[0]}.png")
+    # plot_inference_data(inference_dds_small, title="Inference: Datadriven simulation",
+    #                     savepath=f"{save_path}/{os.path.splitext(dds_smallchecker)[0]}.png")
     # plot_inference_data(inference_dds_orig, title="Inference: Datadriven simulation",
     #                     savepath=f"{save_path}/{os.path.splitext(dds_orig)[0]}.png")
-    plot_inference_data(validation_train, title="Validation: Training",
-                        savepath=f"{save_path}/{os.path.splitext(training)[0]}.png")
+    # plot_inference_data(validation_train, title="Validation: Training",
+    #                     savepath=f"{save_path}/{os.path.splitext(training)[0]}.png")

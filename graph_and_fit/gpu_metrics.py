@@ -67,11 +67,6 @@ def compute_gpu_stats(in_path, out_path):
                                          avg_util_label, stdev_util_label, avg_mem_util_label, stdev_mem_util_label, total_mem_label, max_mem_util_label])
     metrics_list.to_csv(output_gpu_stats, mode='w', header=True, index=False)
 
-    # csv_folder = os.path.abspath(in_path)
-    # for csv_file in os.listdir(csv_folder):
-    #     if csv_file.endswith(".csv"):
-    #         print(os.path.join(in_path, csv_file))
-
     basename_metrics = []
     avg_temp = []
     stdev_temp = []

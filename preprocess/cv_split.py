@@ -10,7 +10,8 @@ from sklearn.model_selection import KFold, StratifiedKFold, GroupKFold
 
 """
 This class will split image collections of images and their corresponding masks into
-k equal sets. To allow for repeatable results, seeds can be input to obtain the same sets of train and test data. 
+k equal sets. CV stands for cross validation. To allow for repeatable results, seeds can be input to obtain the same 
+sets of train and test data. 
 
     __author__      = "Pushkar Sathe"
     __email__ = "pushkar.sathe@nist.gov"
