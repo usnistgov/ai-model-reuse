@@ -106,9 +106,7 @@ def parse_INFER_file_name(name):
     :return:
     """
 
-    # print(name)
     moire, wavelength, z, xi, chext = name.split("_")
-    # ch, ext = chext.split(".")
     ch, ext = os.path.splitext(chext)
     if ch.endswith('.ome'):  # handle .ome.tif
         ch = ch.replace('.ome', '')
@@ -219,8 +217,7 @@ def main():
     if args.image_dir is None:
         print('ERROR: missing input image dir ')
         return
-    # isdirectory = os.path.isdir(args.image_dir)
-    # print(isdirectory)
+
     assert os.path.isdir(args.image_dir), "Image dir must be a directory"
     combine_subfolders(args.image_dir, args.output_dir, args.xPieces, args.yPieces, usechannels=args.channels,
                        zPieces=args.zPieces)

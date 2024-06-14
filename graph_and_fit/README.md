@@ -4,9 +4,9 @@
 The user must have pandas, numpy, matplotlib, and scipy packages already installed on their device.
 
 ### Step 1: Generate prediction values base don power and exponential models and n-points 
-python power_function_fit.py --input_dir /home/pnb/trainingOutput/pytorchOutput_A10
+`python power_function_fit.py --input_dir /home/pnb/trainingOutput/pytorchOutput_A10
 --output_dir /home/pnb/trainingOutput/pytorchOutput_A10/graphs
-
+`
 The output will be:
 - a set of graphs in png file format
 - a set of CSV files with the original and predicted values for each combination of model and n-points
@@ -15,13 +15,13 @@ The output will be:
 CSV File Name	Point Selection	power multiplier	power exponent	exp multiplier	exp base
 
 ### Step 2: Generate one row per model so that models can be rank-ordered
-python comparison_metrics.py --input_dir /home/pnb/trainingOutput/pytorchOutput_A10/graphs
+`python comparison_metrics.py --input_dir /home/pnb/trainingOutput/pytorchOutput_A10/graphs
 --output_dir /home/pnb/trainingOutput/pytorchOutput_A10/comparisons
-
+`
 ### Step 3: Generate statistics (one row per model) for GPU utilization so that models can be rank-ordered
-python gpu_metrics.py --input_dir /home/pnb/trainingOutput/pytorchOutput_concrete/gpu_info/ 
+`python gpu_metrics.py --input_dir /home/pnb/trainingOutput/pytorchOutput_concrete/gpu_info/ 
 --output_dir /home/pnb/trainingOutput/pytorchOutput_concrete/comparisons/
-
+`
 ### Note:
 predict_compare.sh executes all three steps in a batch mode
 

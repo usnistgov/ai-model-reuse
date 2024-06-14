@@ -417,7 +417,7 @@ def model_speed(df, use_best=True, metric="CE"):
     # return channel_model_speed
 
 
-if __name__ == "__main__": # TODO
+if __name__ == "__main__": # TODO argparse
     eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/infer_tile_images.csv"
     eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/inference_Measured.csv"
     training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/training.csv"

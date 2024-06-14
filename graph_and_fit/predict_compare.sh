@@ -4,12 +4,11 @@
 root_folder=$1
 
 echo "root_folder: "${root_folder}
-#echo "image_input_folder: "${image_input_folder}
-#echo "mask_input_folder: "${mask_input_folder}
 
 # --input_dir /home/pnb/trainingOutput/pytorchOutput_A10 --output_dir /home/pnb/trainingOutput/pytorchOutput_A10/graphs
 python power_function_fit.py --input_dir=${root_folder} --output_dir=${root_folder}"/graphs"
-python plot_graphs_INFER.py --input_dir=${root_folder} --output_dir=${root_folder}"/graphs_metrics"
+# optional. Add if relevant
+# python plot_graphs_INFER.py --input_dir=${root_folder} --output_dir=${root_folder}"/graphs_metrics"
 
 # --input_dir /home/pnb/trainingOutput/pytorchOutput_A10/graphs --output_dir /home/pnb/trainingOutput/pytorchOutput_A10/comparisons
 python comparison_metrics.py --input_dir=${root_folder}"/graphs" --output_dir=${root_folder}"/comparisons"

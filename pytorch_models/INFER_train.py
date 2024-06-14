@@ -214,40 +214,6 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, bpath,
         # epoch_dice = running_dice / len(dataloaders['Test'])
         # epoch_jaccard = running_jaccard / len(dataloaders['Test'])
         epoch_mse = running_mse / len(dataloaders['Test'])
-        # cf = np.sum(matrices, 0)
-        # running_precision = 0
-        # sums = np.sum(cf, axis=1).tolist()
-        # avgsubtract = 0
-        # for i in range(0, classes):
-        #     class_precision = 0
-        #     if sums[i] == 0:
-        #         avgsubtract += 1
-        #     else:
-        #         class_precision = cf[i][i] / sums[i]
-        #     running_precision += class_precision
-        # print(classes, avgsubtract, running_precision)
-        # if classes - avgsubtract > 0:
-        #     avg_precision = running_precision / (classes - avgsubtract)
-        # else:
-        #     avg_precision = 0  # TODO: This is a temporary fix for tomography, but leads to inaccuracies in all metrics with the fix
-        # col_sums = np.sum(cf, axis=0).tolist()
-        # running_recall = 0
-        # avgsubtract = 0
-        # for i in range(0, classes):
-        #     class_recall = 0
-        #     if col_sums[i] == 0:
-        #         avgsubtract += 1
-        #     else:
-        #         class_recall = cf[i][i] / col_sums[i]
-        #     running_recall += class_recall
-        # if classes - avgsubtract > 0:
-        #     avg_recall = running_recall / (classes - avgsubtract)
-        # else:
-        #     avg_recall = 0
-        # if avg_recall or avg_precision:  # ensure atleast one is nonzero
-        #     f1 = ((avg_precision * avg_recall) / (avg_precision + avg_recall)) * 2
-        # else:
-        #     f1 = 0
 
         macro_precision, macro_recall, macro_f1, macro_jaccard, micro_precision, micro_recall, micro_f1, micro_jaccard, confidences = calculate_metrics(
             matrices, classes)

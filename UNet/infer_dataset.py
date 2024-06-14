@@ -7,7 +7,6 @@ import sys
 if sys.version_info[0] < 3:
     raise Exception('Python3 required')
 
-
 import skimage.io
 import numpy as np
 import os
@@ -54,6 +53,8 @@ this method runs inference and reports confusion matrix base don the provided ma
 run inference with model_filemath on images in image_filepath and 
 save results in output_dir
 '''
+
+
 def inference(model_filepath, image_filepath, output_dir):
     model = torch.load(model_filepath)
     model.eval()
@@ -78,7 +79,7 @@ def inference(model_filepath, image_filepath, output_dir):
 
         # img = unet_dataset.UnetDataset.zscore_normalize(img)
         # img = img.reshape(img.shape[0], img.shape[1], 1)
-        img = unet_dataset.UnetDataset.format_image(img) # re-order channels to meet the pytorch CHW order
+        img = unet_dataset.UnetDataset.format_image(img)  # re-order channels to meet the pytorch CHW order
         img = np.concatenate((img, img, img), axis=0)
 
         # TypeError: can't convert np.ndarray of type numpy.uint16. The only supported types are: float64, float32, float16, complex64, complex128, int64, int32, int16, int8, uint8, and bool.
@@ -104,7 +105,6 @@ def inference(model_filepath, image_filepath, output_dir):
 
 
 def main():
-    # print('hello')
     # # Setup the Argument parsing
     # parser = argparse.ArgumentParser(prog='inference', description='Script which performs inference using a unet model')
     # parser.add_argument('--model_filepath', type=str)
