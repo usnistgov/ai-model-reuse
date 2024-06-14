@@ -14,6 +14,7 @@ import skimage.transform
 import argparse
 import model_analysis
 import os
+from metrics import *
 import INFER_segm_comparisons as segm_comp
 from pathlib import Path
 from torchvision.models.segmentation.deeplabv3 import DeepLabHead
@@ -46,23 +47,6 @@ def createDeepLabv3(outputchannels=1):
     return model
 
 
-# def confusion_matrix(predictions, masks, classes):
-#     matrix = np.zeros((classes, classes))
-#     for h in range(predictions.shape[0]):
-#         for w in range(predictions.shape[1]):
-#             matrix[predictions[h][w]][masks[h][w]] += 1
-#
-#     # for i in range(predictions.shape[0]):
-#     #     pred = torch.argmax(predictions[i], 0)
-#     #     pred = pred.cpu().detach().numpy().astype(np.uint8)
-#     #     mask = torch.squeeze(masks[i], 0)
-#     #     mask = mask.cpu().detach().numpy().astype(np.uint8)
-#     #     for h in range(pred.shape[0]):
-#     #         for w in range(pred.shape[1]):
-#     #             matrix[pred[h][w]][mask[h][w]] += 1
-#     return matrix
-#
-
 ''' 
 run inference with model_filemath on images in image_filepath and 
 save results in output_dir
@@ -86,22 +70,7 @@ def inference(modelFilepath, image_filepath, output_dir):
         else:
             image = image.astype(np.float32)
             pass
-            # print("ignoring normalization")
-
-        # if (image.dtype != "uint8"):
-        #     image = image / 65536  # assumes uint16  --> 256*256
-        #     # sample['image'] = torch.from_numpy(image)
-        # else:
-        #     image = image / 255
-        #     # sample['image'] = sample['image'] / 255
-        #     # sample['image'] = torch.from_numpy(image)
-
         img = torch.from_numpy(image)
-
-        # img = Image.open(file_array[i])
-        # img = img.convert('RGB')
-        # data_transform = transforms.Compose([transforms.ToTensor()])
-        # img = data_transform(img)
         img = torch.unsqueeze(img, 0)
         img = img.type(torch.cuda.FloatTensor)
         pred = model(img)
@@ -110,11 +79,8 @@ def inference(modelFilepath, image_filepath, output_dir):
         pred = torch.squeeze(pred, 0)
         pred = torch.argmax(pred, 0)
         pred = pred.cpu().detach().numpy().astype(np.uint8)
-        # name_start = file_array[i].find('2')
-        # name = file_array[i] #[name_start:100]
         basename = os.path.basename(file_array[i])
         output_fullpath = str(output_dir) + "/pred_{}".format(basename)
-        # print('outputfile:', basename, end='\t')
         skimage.io.imsave(output_fullpath, pred)
 
 
@@ -138,14 +104,18 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         mfilepath = os.path.join(mask_filepath, mfilename)
         mask_file_array.append(mfilepath)
 
-    avg_precision_score, avg_adjusted_rand, avg_recall_score, avg_accuracy_score = 0.0, 0.0, 0.0, 0.0
-    avg_f1_score, avg_dice, avg_jaccard, avg_mse = 0.0, 0.0, 0.0, 0.0
+    avg_macro_precision, avg_adjusted_rand, avg_macro_recall, avg_accuracy_score = 0.0, 0.0, 0.0, 0.0
+    avg_micro_precision, avg_micro_recall, avg_accuracy_score = 0.0, 0.0, 0.0
+    avg_macro_f1, avg_micro_f1, avg_mse = 0.0, 0.0, 0.0
+    avg_macro_recall_score, avg_micro_recall_score = 0.0, 0.0
+    avg_macro_jaccard, avg_micro_jaccard = 0.0, 0.0
+    avg_confidence_sd_micro, avg_confidences_sd_macro = 0.0, 0.0
     labelwise_dice = {}  # empty dictionary for all labels
     labelwise_MCM = {}  # empty dictionary for all labels
     PCM = None
     known_labels = []
     cumulative_PCM = None
-    layer = None
+    matrices = []
     for i in range(len(file_array)):
         image_basename = os.path.basename(file_array[i])
         found_match = False
@@ -183,16 +153,23 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         gt_mask = skimage.io.imread(mask_file_array[match_index]).astype(np.uint8)
         assert gt_mask.shape == pred.shape
         gt_mask_flat, pred_flat = gt_mask.flatten(), pred.flatten()
+        matrices.append(confusionmat(pred_flat, gt_mask_flat, num_classes))
 
+        macro_precision, macro_recall, macro_f1, macro_jaccard, micro_precision, micro_recall, micro_f1, micro_jaccard, confidences = calculate_metrics(
+            matrices, num_classes)
         if use_avgs:
             precision_score, recall_score, accuracy_score, f1_score, jaccard_score, dice_score, mse, _, adjrand = \
                 segm_comp.metrics_masks(mask_file_array[match_index], pred, gt_mask, num_classes, output_dir)
-            avg_precision_score += precision_score
-            avg_recall_score += recall_score
-            avg_accuracy_score += accuracy_score
-            avg_f1_score += f1_score
-            avg_dice += dice_score
-            avg_jaccard += jaccard_score
+            avg_macro_precision += macro_precision
+            avg_micro_precision += micro_precision
+            avg_confidence_sd_micro += confidences['SD'][0]
+            avg_confidences_sd_macro += confidences['SD'][1]
+            avg_macro_f1 += macro_f1
+            avg_micro_f1 += micro_f1
+            avg_macro_recall_score += macro_recall
+            avg_micro_recall_score += micro_recall
+            avg_macro_jaccard += macro_jaccard
+            avg_micro_jaccard += micro_jaccard
             avg_adjusted_rand += adjrand
         else:
             PCM = segm_comp.get_pair_confusion_matrix(gt_mask_flat, pred_flat)
@@ -230,15 +207,20 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
     if len(file_array) > 0:
         MCM_combined, sorted_labels = segm_comp.getMCMfromDict(labelwiseMCM=labelwise_MCM)
         if use_avgs:
-            avg_precision_score /= len(file_array)
-            avg_recall_score /= len(file_array)
+            avg_macro_precision /= len(file_array)
+            avg_micro_jaccard /= len(file_array)
+            avg_macro_recall_score /= len(file_array)
+            avg_micro_recall_score /= len(file_array)
             avg_accuracy_score /= len(file_array)
-            avg_f1_score /= len(file_array)
-            avg_dice /= len(file_array)
-            avg_jaccard /= len(file_array)
+            avg_macro_f1 /= len(file_array)
+            avg_micro_f1 /= len(file_array)
+            avg_macro_jaccard /= len(file_array)
+            avg_micro_jaccard /= len(file_array)
             avg_mse /= len(file_array)
             avg_adjusted_rand /= len(file_array)
+
         else:
+
             avg_accuracy_score, avg_precision_score, avg_recall_score, avg_f1_score = segm_comp.cumulative_multilabel_aprf(
                 PCM)
             avg_dice = segm_comp.cumulative_multilabel_dice(PCM)
@@ -253,8 +235,12 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         PCM_combined, _ = segm_comp.getMCMfromDict(labelwiseMCM=cumulative_PCM)
 
     dicelist = sorted(list(labelwise_dice.keys()))
-    fieldnames = ['GTMask_filepath', 'PredMask_filepath', 'Precision', 'Recall', 'Accuracy', 'F1-Score', 'Dice',
-                  'Jaccard', 'MSE', "Adjusted Rand", 'Exec_time [seconds]'] + dicelist
+    # fieldnames = ['GTMask_filepath', 'PredMask_filepath', 'Precision', 'Recall', 'Accuracy', 'F1-Score', 'Dice',
+    #               'Jaccard', 'MSE', "Adjusted Rand", 'Exec_time [seconds]'] + dicelist
+    fieldnames = ['GTMask_filepath', 'PredMask_filepath', 'Model', 'Pretrained', 'LR', 'Batch_Size', 'epoch', 'Seconds',
+                  'Train_loss', 'Test_loss', 'Per-Pixel Accuracy', 'Precision_macro', 'Precision_micro', 'Recall_macro',
+                  'Recall_micro', 'Dice_macro', 'Dice_micro', 'Jaccard_macro', 'Jaccard_micro', 'confidence_sd_macro',
+                  'confidence_sd_micro', 'MSE', "Adjusted Rand", 'Exec_time [seconds]'] + dicelist
     metrics_name = '_metrics.csv'
     print(f"DICELIST: {dicelist}")
     path_to_file = output_dir + metrics_name
@@ -269,13 +255,20 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
     batchsummary = {a: [0] for a in fieldnames}
     batchsummary['GTMask_filepath'] = mask_filepath
     batchsummary['PredMask_filepath'] = output_dir
-    batchsummary['Precision'] = avg_precision_score
-    batchsummary['Recall'] = avg_recall_score
-    batchsummary['Accuracy'] = avg_accuracy_score
-    batchsummary['F1-Score'] = avg_f1_score
-    batchsummary['Dice'] = avg_dice
+    batchsummary['Per-Pixel Accuracy'] = avg_accuracy_score
+    batchsummary['Precision_macro'] = avg_macro_precision
+    batchsummary['Precision_micro'] = avg_micro_precision
+    batchsummary['Recall_macro'] = avg_macro_recall
+    batchsummary['Recall_micro'] = avg_micro_recall
+    batchsummary['Dice_macro'] = avg_macro_f1
+    batchsummary['Dice_micro'] = avg_micro_f1
+    batchsummary['Jaccard_macro'] = avg_macro_jaccard
+    batchsummary['Jaccard_micro'] = avg_micro_jaccard
+    batchsummary['confidence_sd_micro'] = avg_confidence_sd_micro
+    batchsummary['confidence_sd_macro'] = avg_confidences_sd_macro
+    batchsummary['MSE'] = avg_mse
+
     batchsummary['Adjusted Rand'] = avg_adjusted_rand
-    batchsummary['Jaccard'] = avg_jaccard
     batchsummary['MSE'] = avg_mse
     for l, label in enumerate(known_labels):
         if f"Dice_{str(label)}" in labelwise_dice:
