@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from statannotations.Annotator import Annotator
 from scipy.stats import mannwhitneyu
-
+import argparse
 """
 1. should boxplots change for log scale? - no
 2. statistical significance calculation
@@ -416,16 +416,22 @@ def model_speed(df, use_best=True, metric="CE"):
     plt.close()
     # return channel_model_speed
 
-
 if __name__ == "__main__": # TODO argparse
+    parser = argparse.ArgumentParser(prog='visualize metrics',
+                                     description='Script that renames image files according to mask files')
+    parser.add_argument('--datafile', type=str, nargs='+', help='full path of csv file with metrics')
+    parser.add_argument('--calculation_types', type=str, nargs='+', default='training',
+                        help='csv name. training and inference results are treated differently, list all folder name substrings. e.g. inference_opposite_evaluated')
+    parser.add_argument('--savepath', type=str, default="path to save figures",
+                        help='../data/figupdates_final1')
+
+    args, unknown = parser.parse_known_args()
+    savepath = args.savepath
     eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/infer_tile_images.csv"
     eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/inference_Measured.csv"
     training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/training.csv"
     savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/archive/CG1D_PS_comparechannels_old/figupdates_final1"
-    # eval_synthetic = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/infer_tile_images.csv"
-    # eval_measured = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/inference_Measured.csv"
-    # training_data = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/training.csv"
-    # savepath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD_3_4/MeasuredTrain/figupdates"
+
     dataF = pd.read_csv(training_data)
     allmetrics = ['Train loss', 'Validation loss', 'precision', 'recall', 'accuracy', 'F1-Score', 'Dice', 'Jaccard',
                   'MSE']
@@ -457,3 +463,5 @@ if __name__ == "__main__": # TODO argparse
                 if i != j:
                     plot_metrics_comparison(dataF, savepath=savepath, comparemetrics=[i, j], tr_thresh=5,
                                             tst_thresh=5, draw_lines=True)
+
+

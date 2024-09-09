@@ -14,7 +14,6 @@ from sklearn.metrics import f1_score, mean_squared_error, jaccard_score, adjuste
     multilabel_confusion_matrix
 from sklearn.metrics import _classification
 
-# TODO: replace precision,recall,f1?
 '''
 compute the accuracy against the ground truth mask over a folder of predicted and ground truth masks
 __author__      = "Peter Bajcsy"

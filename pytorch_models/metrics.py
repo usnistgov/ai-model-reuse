@@ -88,7 +88,7 @@ def calculate_metrics(batch_tilewise_confusion_matrix, classes, conf_level=0.95)
     cf = np.sum(batch_tilewise_confusion_matrix, axis=0)
 
     # initialize
-    total_f1, total_precision, recall_scores, total_jaccard = 0, 0, 0, 0
+    total_f1, total_precision, total_recall, total_jaccard = 0, 0, 0, 0
     micro_f1, micro_precision, micro_recall, micro_jaccard = 0, 0, 0, 0
     # predicted_positives = np.sum(cf, axis=1).tolist()  # tp + fp
     # actual_positives = np.sum(cf, axis=0).tolist()  # tp + fn
@@ -104,13 +104,14 @@ def calculate_metrics(batch_tilewise_confusion_matrix, classes, conf_level=0.95)
     miP = miR = miF1 = np.sum(pii)
 
     F1i = divide_nan(2 * pii, (pi_ + p_i))  # ?
-    print(p.shape, pi_.shape, p_i.shape, pii.shape, F1i.shape)  # , pi_, p_i)
-    print(n, F1i.shape)
-    print(pi_ + p_i)
+    # print(p.shape, pi_.shape, p_i.shape, pii.shape, F1i.shape)  # , pi_, p_i)
+    # print(n, F1i.shape)
+    # print(pi_ + p_i)
     a, b = 0, 0
     r = cf.shape[1]  # classes -> replace with actual classes
     #########################################
     for i in range(classes):
+        # Calculate properties per class
         tp = cf[i][i]
         fp = np.sum(cf[:, i]) - tp
         fn = np.sum(cf[i, :]) - tp
@@ -118,7 +119,7 @@ def calculate_metrics(batch_tilewise_confusion_matrix, classes, conf_level=0.95)
         micro_fp += fp
         micro_fn += fn
         # tn = np.sum(cf) - (tp + fp + fn)
-        if tp + fp + fn > 0:  # class is predicted or exists in gt
+        if tp + fp + fn > 0:  # class is valid: predicted or exists in gt
             actual_classes += 1
             c_precision = tp / (tp + fp) if (tp + fp) else 0
             c_recall = tp / (tp + fn) if (tp + fn) else 0
@@ -128,6 +129,7 @@ def calculate_metrics(batch_tilewise_confusion_matrix, classes, conf_level=0.95)
             total_f1 += c_f1
             total_precision += c_precision
             total_jaccard += c_jaccard
+            total_recall += c_recall
             # only calculating over actual classes
             a += divide_nan(F1i[i] * (pi_[i] + p_i[i] - 2 * pii[i]), (pi_[i] + p_i[i]) ** 2) * (
                     (divide_nan(pi_[i] + p_i[i] - 2 * pii[i], pi_ + p_i)) + F1i[i] / 2)
@@ -140,9 +142,9 @@ def calculate_metrics(batch_tilewise_confusion_matrix, classes, conf_level=0.95)
     maP = np.nansum(divide_nan(pii, pi_)) / actual_classes
     maR = np.nansum(divide_nan(pii, p_i)) / actual_classes
     maF2 = 2 * divide_nan(maP * maR, maP + maR)  # calculated from mean and precision
-    print("miP", miP, "miR", miR, "miF1", miF1, "maP", maP, "maF1", maF1, "maF2", maF2, "actual_classes",
-          actual_classes, "maF1", "np.sum(F1i)", np.sum(F1i))  # , pi_, p_i)
-    print("n", n, "r", r)
+    # print("miP", miP, "miR", miR, "miF1", miF1, "maP", maP, "maF1", maF1, "maF2", maF2, "actual_classes",
+    #       actual_classes, "maF1", "np.sum(F1i)", np.sum(F1i))  # , pi_, p_i)
+    # print("n", n, "r", r)
     # for i in range(r):
     #     jj = np.delete(np.arange(r), i)
     #     for j in jj:
@@ -165,7 +167,7 @@ def calculate_metrics(batch_tilewise_confusion_matrix, classes, conf_level=0.95)
     print(confidences)
     #############################################################################
     macro_precision = total_precision / actual_classes if actual_classes else 0
-    macro_recall = recall_scores / actual_classes if actual_classes else 0
+    macro_recall = total_recall / actual_classes if actual_classes else 0
     macro_f1 = total_f1 / actual_classes if actual_classes else 0
     macro_jaccard = total_jaccard / actual_classes if actual_classes else 0
 
@@ -177,17 +179,3 @@ def calculate_metrics(batch_tilewise_confusion_matrix, classes, conf_level=0.95)
 
     return macro_precision, macro_recall, macro_f1, macro_jaccard, micro_precision, micro_recall, micro_f1, micro_jaccard, confidences
 
-# def get_jaccard_batch(predictions, masks):
-#     total_jaccard = 0
-#     length = predictions.shape[0]
-#     for i in range(predictions.shape[0]):
-#         pred = torch.argmax(predictions[i], 0)
-#         pred = pred.cpu().detach().numpy().astype(np.uint8)
-#         mask = torch.squeeze(masks[i], 0)
-#         mask = mask.cpu().detach().numpy().astype(np.uint8)
-#         # print("maskshape", mask.shape,"predshape", pred.shape)
-#         jaccard_coeff = jaccard_score(mask.flatten(), pred.flatten(), average='micro')
-#         #  https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
-#         total_jaccard += jaccard_coeff
-#     avg_jaccard = total_jaccard / length
-#     return avg_jaccard

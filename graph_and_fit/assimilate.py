@@ -1,22 +1,14 @@
 """
 Given a list of paths for data +  saved model folders, this file can be used to combine all of them together into a single excel file
+
+
 """
 
 import argparse
 import os
 import pandas as pd
 
-# calculation_types = ["training", "inference_opposite_Evaluated"]#, "infer_tile_images"]
-# calculation_types = ["training", "opposite_evaluated_cumulative", "infer_tile_images"]
-# calculation_types = ["infer_tile_images"]
-# calculation_types = ["training", "opposite_evaluated_cumulative"]
-# calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "infer_tile_images_orig",
-#                      "training"]
-# calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "infer_tile_images_pbs",
-#                      "training", "infer_tile_images_orig"]
-# calculation_types = ["inference_opposite_Evaluated_cumulative", "infer_tile_images_cumulative", "training"]
-# calculation_types = ["infer_tile_images_cumulative", "opposite_evaluated_cumulative", "training"]
-# calculation_types = ["training"]
+
 
 # lrlookup = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # TODO: needs a more flexible approach
 lrlookup = [1e-3, 1e-2]
@@ -96,7 +88,6 @@ def compile_folder(experiment_folders, model_substring, calculation_type="infere
             print("csvs", calcsubdir)
             for c, csvfile in enumerate(csvs):
                 fname = os.path.basename(csvfile)
-                # TODO: based on location of "metrics'
                 modelname, _, sampletype, instrument, lr, pretrained, _metricscsv = fname.split("_")
                 if _metricscsv != "metrics.csv":
                     modelname, _, _, sampletype, instrument, lr, pretrained = fname.split("_")
@@ -157,7 +148,7 @@ def compile_folder_train(experiment_folders, model_substring):
 def main():
     parser = argparse.ArgumentParser(prog='split',
                                      description='Script that renames image files according to mask files')
-    parser.add_argument('--foldernames', type=str, nargs='+', help='full path of main folder folder')
+    parser.add_argument('--folderpath', type=str, nargs='+', help='full path of main folder folder')
     parser.add_argument('--calculation_types', type=str, nargs='+', default='training',
                         help='csv name. training and inference results are treated differently, list all folder name substrings. e.g. inference_opposite_evaluated')
     parser.add_argument('--model_cstring', type=str, default="pytorchOutputMtoM_INFER_final",
@@ -167,22 +158,10 @@ def main():
 
     if args.foldername is None:
         print('ERROR: missing input mask folder ')
-    foldernames = args.foldernames
+    folderpath = args.folderpath
     # model_cstring = args.substring
-    # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS/25/"
-    # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ncheck_CG1D_PS_size/5_1/"
-    # folderpath = "C:/Users/pss2/NetBeansProjects/stats-simulations/data/ASD34/MeasuredTrain"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/0-10_PBS-DDS"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/1-9_PBS-DDS"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/2-8_PBS-DDS"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/3-7_PBS-DDS"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/4-6_PBS-DDS"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/5-5_PBS-DDS"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/6-4_PBS-DDS"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/7-3_PBS-DDS"
-    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/8-2_PBS-DDS"
     # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/9-1_PBS-DDS"
-    folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/10-0_PBS-DDS"
+    # folderpath = "E:/Data/INFER/PBS/LANL_PBSDDS_Clean_5_10/Combined/10-0_PBS-DDS"
     foldernames = [
         # f"{folderpath}/H0",
         f"{folderpath}",

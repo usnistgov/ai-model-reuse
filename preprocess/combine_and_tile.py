@@ -51,7 +51,7 @@ def tile(final_stack, savepath, xPieces, yPieces, ext=".tif"):
     xPieces and yPieces respectively.
     """
     fs = final_stack.shape
-    imgheight, imgwidth = fs[1], fs[2]  # TODO: handle 3d
+    imgheight, imgwidth = fs[1], fs[2]
     height = imgheight // xPieces
     width = imgwidth // yPieces
     # Final tiles ignored as their larger sizes cant currently be handled.

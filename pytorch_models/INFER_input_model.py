@@ -188,7 +188,7 @@ class LSTMModel(torch.nn.Module):
         return x
 
 
-class GRUModel(torch.nn.Module):  # TODO
+class GRUModel(torch.nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, num_classes):
         super(GRUModel, self).__init__()
         self.hidden_size = hidden_size
@@ -256,8 +256,8 @@ class GRU_3D_Model(torch.nn.Module):  # TODO
 
     def forward(self, x):
         batchsize, xis, zs, xs, ys = x.size()  # torch size not np
-        # x = x.permute(0, 2, 3, 4, 1)  # TODO x.view
-        x = x.view(batchsize, xis, -1)  # TODO x.view
+        # x = x.permute(0, 2, 3, 4, 1)
+        x = x.view(batchsize, xis, -1)
         x = x.permute(0, 2, 1)
         x, hn = self.gru(x)  # xshape = (newbatchsize, xis, hiddensize)
         # x = x.reshape(batchsize, zs, xs, ys, self.hidden_size)

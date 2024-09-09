@@ -44,7 +44,6 @@ def imgcrop(input, xPieces, yPieces, img_name, output_dir):
             box = (j * width, i * height, (j + 1) * width, (i + 1) * height)
             a = im.crop(box)
             a.save(output_dir + "/" + img_name + "_" + str(i) + "-" + str(j) + file_extension)
-            # TODO this change works here but has to be propagated to the stitching.py code
 
 
 def imgcrop_tomo(input, xPieces, yPieces, zPieces, img_name, output_dir):

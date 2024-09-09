@@ -39,35 +39,6 @@ def stratified_split(image_folder, mask_folder, k, shuffle=True, seed=None):
     kf = StratifiedKFold(n_splits=k, shuffle=shuffle, random_state=seed)
     kf.get_n_splits(X=img_files, y=mask_files)
     return
-    # idx = int(fraction * len(img_files))
-    # train_img_files = img_files[0:idx]
-    # test_img_files = img_files[idx:]
-    # # print(train_img_files)
-    # # print(test_img_files)
-    # for fn in train_img_files:
-    #     file = os.path.join(image_folder, fn)
-    #     mask_file = os.path.join(mask_folder, fn)
-    #     # print(file, mask_file)
-    #     # print(os.path.isfile(file) , os.path.isfile(mask_file) )
-    #     if os.path.isfile(file) and os.path.isfile(mask_file):
-    #         if not os.path.exists(train_image_folder):
-    #             os.mkdir(train_image_folder)
-    #         if not os.path.exists(train_mask_folder):
-    #             os.mkdir(train_mask_folder)
-    #         # print(file, "{}/{}".format(train_image_folder, fn))
-    #         copyfile(file, "{}/{}".format(train_image_folder, fn))
-    #         copyfile(mask_file, "{}/{}".format(train_mask_folder, fn))
-    #
-    # for fn in test_img_files:
-    #     file = os.path.join(image_folder, fn)
-    #     mask_file = os.path.join(mask_folder, fn)
-    #     if os.path.isfile(file) and os.path.isfile(mask_file):
-    #         if not os.path.exists(test_image_folder):
-    #             os.mkdir(test_image_folder)
-    #         if not os.path.exists(test_mask_folder):
-    #             os.mkdir(test_mask_folder)
-    #         copyfile(file, "{}/{}".format(test_image_folder, fn))
-    #         copyfile(mask_file, "{}/{}".format(test_mask_folder, fn))
 
 
 def main():
@@ -83,17 +54,7 @@ def main():
         return
 
     split(args.image_dir, args.mask_dir, args.k)
-    # image_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/tiled_images"
-    # mask_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/tiled_masks"
-    # train_image_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/train_images"
-    # train_mask_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/train_masks"
-    # test_image_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/test_images"
-    # test_mask_dir = "C:/Users/pss2/PycharmProjects/ai-model-reuse/data/test_masks"
-    # fraction = 0.8
-    # print(image_dir, mask_dir, train_image_dir, train_mask_dir, test_image_dir,
-    #       test_mask_dir, fraction)
-    # split(image_dir, mask_dir, train_image_dir, train_mask_dir, test_image_dir,
-    #       test_mask_dir, fraction)
+
 
 
 if __name__ == "__main__":

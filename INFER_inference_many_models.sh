@@ -39,7 +39,7 @@ for file in $(find $model_directory); do
       #echo 'input parameters:'
       echo '--model_filepath'${file} '--image_dirpath'${image_directory} '--output_dirpath'${output_dir}
       if [[ ${file_basename} != *"unet"* ]]; then
-        echo 'running pytorch model inference' # TODO: mask classes handling
+        echo 'running pytorch model inference'
         python pytorch_models/INFER_inference.py --model_filepath=${file} --image_dirpath=${image_directory} --mask_dirpath=${mask_directory} --mask_numclasses=256 --output_dirpath=${output_dir}
       else
         echo 'running unet model inference'

@@ -18,7 +18,7 @@ from tqdm import tqdm
 from gpu_utilization import write_header
 from gpu_utilization import record
 from INFER_Dataset import GetDataloader
-# TODO: auto gpu or cpu
+
 
 def initializeModel(output_channels, pretrained, name, input_channels=252, bs=80, windowsize=200):
     model = None
@@ -240,9 +240,6 @@ def train_model(model, criterion, criterion_test, dataloaders, optimizer, bpath,
         with open(os.path.join(bpath, metricsfile), 'a', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow(batchsummary)
-        # if epoch == num_epochs:# TODO replace with best model
-        #     fullPath = str(bpath) + '/' + str(mfn)
-        #     torch.save(model, fullPath)
     fullPath = str(bpath) + '/' + str(mfn)
     torch.save(best_model, fullPath)
     time_elapsed = time.time() - since
@@ -370,7 +367,6 @@ def main():
     if args.pretrained == 'False':
         pretrained = False
     # TODO: Add functionality for dynamically choosing windowsize
-    # TODO: also dynamically choose input_channels
     # Calls function to create the deeplabv3 model from torchvision.
     model = initializeModel(output_channels=args.classes, pretrained=pretrained, name=args.modelName,
                             input_channels=args.inputchannels, bs=args.batchsize)
@@ -390,7 +386,7 @@ def main():
 
     if args.devicetype == 'cpu':
         my_weights = torch.FloatTensor(fractions)
-    else:
+    else: # Select GPU by default
         my_weights = torch.cuda.FloatTensor(fractions)
     print(f"Weighted Classes: {my_weights}")
     criterion = torch.nn.CrossEntropyLoss(weight=my_weights)  # criterion for training (weigthed classes)
