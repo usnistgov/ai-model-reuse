@@ -104,10 +104,9 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         mfilepath = os.path.join(mask_filepath, mfilename)
         mask_file_array.append(mfilepath)
 
-    avg_macro_precision, avg_adjusted_rand, avg_macro_recall, avg_accuracy_score = 0.0, 0.0, 0.0, 0.0
-    avg_micro_precision, avg_micro_recall, avg_accuracy_score = 0.0, 0.0, 0.0
+    avg_macro_precision, avg_adjusted_rand, avg_macro_recall, avg_accuracy = 0.0, 0.0, 0.0, 0.0
+    avg_micro_precision, avg_micro_recall, avg_accuracy = 0.0, 0.0, 0.0
     avg_macro_f1, avg_micro_f1, avg_mse = 0.0, 0.0, 0.0
-    avg_macro_recall_score, avg_micro_recall_score = 0.0, 0.0
     avg_macro_jaccard, avg_micro_jaccard = 0.0, 0.0
     avg_confidence_sd_micro, avg_confidences_sd_macro = 0.0, 0.0
     labelwise_dice = {}  # empty dictionary for all labels
@@ -158,7 +157,7 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         macro_precision, macro_recall, macro_f1, macro_jaccard, micro_precision, micro_recall, micro_f1, micro_jaccard, confidences = calculate_metrics(
             matrices, num_classes)
         if use_avgs:
-            precision_score, recall_score, accuracy_score, f1_score, jaccard_score, dice_score, mse, _, adjrand = \
+            precision_score, recall_score, accuracy, f1_score, jaccard_score, dice_score, mse, _, adjrand = \
                 segm_comp.metrics_masks(mask_file_array[match_index], pred, gt_mask, num_classes, output_dir)
             avg_macro_precision += macro_precision
             avg_micro_precision += micro_precision
@@ -166,8 +165,8 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
             avg_confidences_sd_macro += confidences['SD'][1]
             avg_macro_f1 += macro_f1
             avg_micro_f1 += micro_f1
-            avg_macro_recall_score += macro_recall
-            avg_micro_recall_score += micro_recall
+            avg_macro_recall += macro_recall
+            avg_micro_recall += micro_recall
             avg_macro_jaccard += macro_jaccard
             avg_micro_jaccard += micro_jaccard
             avg_adjusted_rand += adjrand
@@ -208,10 +207,10 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
         MCM_combined, sorted_labels = segm_comp.getMCMfromDict(labelwiseMCM=labelwise_MCM)
         if use_avgs:
             avg_macro_precision /= len(file_array)
-            avg_micro_jaccard /= len(file_array)
-            avg_macro_recall_score /= len(file_array)
-            avg_micro_recall_score /= len(file_array)
-            avg_accuracy_score /= len(file_array)
+            avg_micro_precision /= len(file_array)
+            avg_macro_recall /= len(file_array)
+            avg_micro_recall /= len(file_array)
+            avg_accuracy /= len(file_array)
             avg_macro_f1 /= len(file_array)
             avg_micro_f1 /= len(file_array)
             avg_macro_jaccard /= len(file_array)
@@ -221,7 +220,7 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
 
         else:
 
-            avg_accuracy_score, avg_precision_score, avg_recall_score, avg_f1_score = segm_comp.cumulative_multilabel_aprf(
+            avg_accuracy, avg_precision_score, avg_recall_score, avg_f1_score = segm_comp.cumulative_multilabel_aprf(
                 PCM)
             avg_dice = segm_comp.cumulative_multilabel_dice(PCM)
             avg_jaccard = segm_comp.cumulative_multilabel_jaccard(PCM)
@@ -255,7 +254,7 @@ def inference_withmask(modelFilepath, image_filepath, mask_filepath, num_classes
     batchsummary = {a: [0] for a in fieldnames}
     batchsummary['GTMask_filepath'] = mask_filepath
     batchsummary['PredMask_filepath'] = output_dir
-    batchsummary['Per-Pixel Accuracy'] = avg_accuracy_score
+    batchsummary['Per-Pixel Accuracy'] = avg_accuracy
     batchsummary['Precision_macro'] = avg_macro_precision
     batchsummary['Precision_micro'] = avg_micro_precision
     batchsummary['Recall_macro'] = avg_macro_recall

@@ -263,7 +263,7 @@ def main():
     parser.add_argument('--learningRate', type=float, help='')
     parser.add_argument('--metricsfile', type=str, help='')
     parser.add_argument('--modelName', type=str, help='')
-    parser.add_argument('--pretrained', type=bool, help='')
+    parser.add_argument('--pretrained', type=str, help='')
     parser.add_argument('--classes', type=int, help='')
     parser.add_argument('--inputchannels', type=int, help='')
     args, unknown = parser.parse_known_args()

@@ -139,8 +139,8 @@ def stitch(image_dir, output_dir):
                     print('INFO: missing a tile in the grid: column=', j, ' row=', i)
                     continue
                 img = open_image(filepath)
-                # numcols, numrows = img.size #FOR NORMAL?
-                numrows, numcols = img.size  # FOR LSTM
+                numcols, numrows = img.size #FOR NORMAL?
+                # numrows, numcols = img.size  # FOR LSTM
                 if finalWidth == -1 or finalHeight == -1:
                     # check the last tile for an odd size due to tiling algorithm
                     lasttile_filename = file + "_" + str(int(max_yTilePos[k])) + "-" + str(
